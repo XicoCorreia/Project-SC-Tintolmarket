@@ -1,7 +1,7 @@
 /**
  * 
  */
-package pt.ul.fc;
+package com.segc;
 
 /**
  * @author fc54685 Francisco Correia
@@ -9,10 +9,8 @@ package pt.ul.fc;
  * @author fc56272 Filipe Egipto
  *
  */
-public class TintolmarketServer {
-
+public class Tintolmarket {
     public static void main(String[] args) {
         // TODO Auto-generated method stub
     }
-
 }

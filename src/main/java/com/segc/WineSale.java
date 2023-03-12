@@ -1,7 +1,7 @@
 /**
  * 
  */
-package pt.ul.fc;
+package com.segc;
 
 /**
  * @author fc54685 Francisco Correia
