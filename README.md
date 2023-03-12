@@ -1,4 +1,4 @@
-# Tintolmarket (Segurança e Confiabilidade 2022/2023)
+# Tintolmarket (SeguranÃ§a e Confiabilidade 2022/2023)
 
 Autores:
  - Francisco Correia (fc54685)
