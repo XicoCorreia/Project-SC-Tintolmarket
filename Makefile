@@ -6,11 +6,7 @@ else
 	CP = cp -f
 endif
 
-sources = $(wildcard *.java)
-classes = $(sources:.java=.class)
-
 SRC_DIR = ./src/main/java
-
 PACKAGE = com.segc
 CLIENT = $(subst .,/,$(PACKAGE))/Tintolmarket.java
 SERVER = $(subst .,/,$(PACKAGE))/TintolmarketServer.java
