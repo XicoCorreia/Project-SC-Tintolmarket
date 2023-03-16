@@ -50,4 +50,29 @@ public class Wine {
         this.image = image;
         this.ratings = ratings;
     }
+
+    /**
+     * @return The image associated to this Wine.
+     */
+    public Image getImage()
+    {
+        return this.image;
+    }
+
+    /**
+     * @return The average classification of this Wine.
+     */
+    public double getClassification()
+    {
+        if (ratings.size() == 0)
+        {
+            return 0;
+        }
+        Integer sum = 0;
+        for (Integer x: this.ratings)
+        {
+            sum += x;
+        } 
+        return (double) sum/(double) this.ratings.size();
+    }
 }
