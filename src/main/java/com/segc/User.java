@@ -51,4 +51,12 @@ public class User {
     {
         return this.clientId;
     }
+
+    /**
+     * @return The balance of this User.
+     */
+    public double getBalance()
+    {
+        return this.balance;
+    }
 }
