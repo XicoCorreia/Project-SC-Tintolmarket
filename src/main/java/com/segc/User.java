@@ -59,4 +59,20 @@ public class User {
     {
         return this.balance;
     }
+
+    /**
+     * @param balance The balance to add to this client's balance.
+     */
+    public void addBalance(double balance)
+    {
+        this.balance += balance;
+    }
+
+    /**
+     * @param balance The balance to remove from this client's balance.
+     */
+    public void removeBalance(double balance)
+    {
+        this.balance -= balance;
+    }
 }
