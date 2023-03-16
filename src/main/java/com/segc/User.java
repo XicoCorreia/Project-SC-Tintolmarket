@@ -43,4 +43,12 @@ public class User {
         this.balance = balance;
         this.messages = messages;
     }
+
+    /**
+     * @return The ID of this User.
+     */
+    public String getID()
+    {
+        return this.clientId;
+    }
 }
