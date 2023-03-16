@@ -38,6 +38,13 @@ public class WineSale {
     }
 
     /**
+     * @param quantity The quantity to remove to this wine.
+     */
+    public void removeQuantity(int quantity) {
+        this.quantity -= quantity;
+    }
+
+    /**
      * @return The seller of this wine.
      */
     public User getUser()
