@@ -36,5 +36,13 @@ public class WineSale {
     public void addQuantity(int quantity) {
         this.quantity += quantity;
     }
+
+    /**
+     * @return The seller of this wine.
+     */
+    public User getUser()
+    {
+        return this.seller;
+    }
 }
 
