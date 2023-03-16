@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.segc;
 
@@ -7,7 +7,6 @@ package com.segc;
  * @author fc54685 Francisco Correia
  * @author fc55955 Alexandre Fonseca
  * @author fc56272 Filipe Egipto
- *
  */
 public class WineSale {
     private Wine wine;
@@ -47,16 +46,14 @@ public class WineSale {
     /**
      * @return The seller of this wine.
      */
-    public User getUser()
-    {
+    public User getUser() {
         return this.seller;
     }
 
     /**
      * @return The price of this wine.
      */
-    public double getValue()
-    {
+    public double getValue() {
         return this.value;
     }
 }

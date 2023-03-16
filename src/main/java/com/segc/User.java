@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.segc;
 
@@ -10,7 +10,6 @@ import java.util.List;
  * @author fc54685 Francisco Correia
  * @author fc55955 Alexandre Fonseca
  * @author fc56272 Filipe Egipto
- *
  */
 public class User {
     private String clientId;
@@ -47,32 +46,28 @@ public class User {
     /**
      * @return The ID of this User.
      */
-    public String getID()
-    {
+    public String getID() {
         return this.clientId;
     }
 
     /**
      * @return The balance of this User.
      */
-    public double getBalance()
-    {
+    public double getBalance() {
         return this.balance;
     }
 
     /**
      * @param balance The balance to add to this client's balance.
      */
-    public void addBalance(double balance)
-    {
+    public void addBalance(double balance) {
         this.balance += balance;
     }
 
     /**
      * @param balance The balance to remove from this client's balance.
      */
-    public void removeBalance(double balance)
-    {
+    public void removeBalance(double balance) {
         this.balance -= balance;
     }
 }
