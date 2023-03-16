@@ -2,6 +2,8 @@
  * 
  */
 package com.segc;
+
+import java.awt.Image;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -18,11 +20,16 @@ public class TintolmarketServer
 {
     private final int port;
     private final File usersFile;
-    private final Map<String, String> users;
+    private final Map<String, String> usersLog;
+    private final Map<String, User> users;
+    private final File winesFile;
+    private final Map<String, Wine> wines;
+    private final File wineSaleFile;
+    private final Map<String, WineSale> winesSale;
 
     public TintolmarketServer() 
     {
-        this(12345, "users.txt");
+        this(12345);
     }
 
     public TintolmarketServer(int serverPort) 
@@ -43,7 +50,7 @@ public class TintolmarketServer
         {
             throw new RuntimeException(e);
         }
-        this.users = getUsersFromFile(usersFile);
+        this.usersLog = getUsersFromFile(usersFile);
     }
 
     private static Map<String, String> getUsersFromFile(File file)
@@ -121,6 +128,76 @@ public class TintolmarketServer
         }
     }
 
+    //Falta colocar unidades a 0 e sem classificação
+    //Fazer log para o ficheiro
+    public boolean add(String wine, Image image) 
+    {
+        if (!this.wines.containsKey(wine))
+        {
+            this.wines.put(wine, new Wine(wine, image));
+            return true;
+        }
+        return false; //Erro
+    }
+
+    public boolean sell(String wine, int value, int quantity, User user)
+    {
+        if (this.wines.containsKey(wine))
+        {
+            this.winesSale.put(wine, new WineSale(this.wines.get(wine),
+                    user, value, quantity));
+            return true;
+        }
+        return false; //Erro
+    }
+
+    public String view(String wine)
+    {
+        if (this.winesSale.containsKey(wine))
+        {
+            WineSale wineSale = this.winesSale.get(wine);
+            Wine w = this.wines.get(wine);
+            String s = "Wine " + wine + ":\n" + w.getImage() + "\nAverage classification: "
+                    + w.getClassification();
+            int qt = wineSale.getQuantity();
+            if (qt > 0)
+            {
+                return s + "\nSelling user: " + wineSale.getUser().getID() + 
+                        "\nPrice:" + wineSale.getValue() + "\nQuantity available:" + qt;
+            }
+            return s;
+        }
+        return "false"; //Erro
+    }
+
+    public boolean buy(String wine, String seller, int quantity, String buyer)
+    {
+        User b = this.users.get(buyer);
+        User s = this.users.get(seller);
+        if (!this.winesSale.containsKey(wine))
+        {
+            return false; //Erro - não existe o vinho
+        } 
+        WineSale wineSale = this.winesSale.get(wine);
+        double total = wineSale.getValue() * quantity;
+        if (wineSale.getQuantity() < quantity)
+        {
+            return false; //Erro - não existem unidades suficientes
+        } else if(total > b.getBalance())
+        {
+            return false; //Erro - não tem saldo suficiente
+        }
+        wineSale.removeQuantity(quantity);
+        s.addBalance(total);
+        b.removeBalance(total);
+        return true;
+    }
+
+    public double wallet(String user)
+    {
+        return this.users.get(user).getBalance();
+    }
+
     class ServerThread extends Thread
     {
 
@@ -128,14 +205,49 @@ public class TintolmarketServer
 
         ServerThread(Socket inSoc)
         {
-            socket = inSoc;
+            this.socket = inSoc;
             System.out.println("thread do server para cada cliente");
         }
 
         @Override
         public void run()
         {
+            try
+            {
+                ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
+                ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
+                String user, password;
 
+                try
+                {
+                    user = (String) inStream.readObject();
+                    password = (String) inStream.readObject();
+                    System.out.println("thread: depois de receber a password e o user");
+                } catch (ClassNotFoundException e)
+                {
+                    throw new RuntimeException(e);
+                }
+
+                if (!usersLog.containsKey(user))
+                {
+                    usersLog.put(user, password);
+                    addUserToFile(user, password);
+                    users.put(user, new User(user));
+                    outStream.writeObject(true);
+                } else if (password.equals(usersLog.get(user)))
+                {
+                    outStream.writeObject(true);
+                } else
+                {
+                    outStream.writeObject(false);
+                }
+                socket.shutdownOutput();
+                socket.close();
+
+            } catch (IOException e)
+            {
+                e.printStackTrace();
+            }
         }
     }
 }
