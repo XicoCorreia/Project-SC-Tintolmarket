@@ -12,11 +12,11 @@ package com.segc;
 public class WineSale {
     private Wine wine;
     private User seller;
-    private int value;
+    private double value;
     private int quantity;
 
 
-    public WineSale(Wine wine, User seller, int value, int quantity) {
+    public WineSale(Wine wine, User seller, double value, int quantity) {
         this.wine = wine;
         this.seller = seller;
         this.value = value;
@@ -43,6 +43,14 @@ public class WineSale {
     public User getUser()
     {
         return this.seller;
+    }
+
+    /**
+     * @return The price of this wine.
+     */
+    public double getValue()
+    {
+        return this.value;
     }
 }
 
