@@ -86,6 +86,16 @@ public class TintolmarketServer {
         }
     }
 
+    private void addWineToFile(String wine, Image image) {
+        try (FileWriter fw = new FileWriter(winesFile, true);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+            bw.write(wine + ":" + image); //TODO
+            bw.newLine();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void startServer() {
         try (ServerSocket sSoc = new ServerSocket(this.port)) {
             while (true) {
@@ -104,11 +114,12 @@ public class TintolmarketServer {
         }
     }
 
-    //Falta colocar unidades a 0 e sem classificação
+    //Falta colocar unidades a 0
     //Fazer log para o ficheiro
     public boolean add(String wine, Image image) {
         if (!this.wines.containsKey(wine)) {
             this.wines.put(wine, new Wine(wine, image));
+            this.addWineToFile(wine, image);
             return true;
         }
         return false; //Erro
@@ -128,7 +139,7 @@ public class TintolmarketServer {
             WineSale wineSale = this.winesSale.get(wine);
             Wine w = this.wines.get(wine);
             String s = "Wine " + wine + ":\n" + w.getImage() + "\nAverage classification: "
-                    + w.getClassification();
+                    + w.getRating();
             int qt = wineSale.getQuantity();
             if (qt > 0) {
                 return s + "\nSelling user: " + wineSale.getUser().getID() +
@@ -160,6 +171,26 @@ public class TintolmarketServer {
 
     public double wallet(String user) {
         return this.users.get(user).getBalance();
+    }
+
+    public boolean classify(String wine, int stars) {
+        if (this.wines.containsKey(wine)) {
+            this.wines.get(wine).addRating(stars);
+            return true;
+        }
+        return false; //Erro
+    }
+
+    public boolean talk(String to_user, String message, String from_user) {
+        if (this.users.containsKey(to_user)) {
+            this.users.get(to_user).addMessage(from_user + ":" + message);
+            return true;
+        }
+        return false; //Erro
+    }
+
+    public String read(String user) {
+        return this.users.get(user).readMessages();
     }
 
     class ServerThread extends Thread {
