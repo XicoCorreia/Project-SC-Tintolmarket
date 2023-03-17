@@ -3,7 +3,11 @@
  */
 package com.segc;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
@@ -69,7 +73,9 @@ public class Tintolmarket {
 							if(c.length != 3) {
 								System.out.println("Error in the command");
 							}
-							//TODO
+							outStream.writeObject(c[0]);
+							outStream.writeObject(c[1]);
+							uploadFile(new File(c[2]), outStream);
 							break;
 						case "sell":
 						case"s": 
@@ -158,5 +164,22 @@ public class Tintolmarket {
 				throw new RuntimeException(e);
 			}
     	}
+    }
+    
+    public static void uploadFile(File file, ObjectOutputStream out) throws IOException
+    {
+        try (FileInputStream fin = new FileInputStream(file);
+             InputStream fileStream = new BufferedInputStream(fin))
+        {
+            long fileSize = file.length();
+            out.writeObject(fileSize);
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = fileStream.read(buffer)) > 0)
+            {
+                out.write(buffer, 0, bytesRead);
+            }
+            out.flush();
+        }
     }
 }
