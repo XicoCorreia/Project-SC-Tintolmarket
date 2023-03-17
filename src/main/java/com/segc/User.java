@@ -70,4 +70,26 @@ public class User {
     public void removeBalance(double balance) {
         this.balance -= balance;
     }
+
+    /**
+     * @param message The message to add to this client's messages.
+     */
+    public void addMessage(String message) {
+        this.messages.add(message);
+    }
+
+    /**
+     * Eliminates all the messages of this client after reading them.
+     * 
+     * @return The messages of this client.
+     */
+    public String readMessages() {
+        StringBuilder sb = new StringBuilder();
+        for(String m: this.messages) {
+            String[] s = m.split(":");
+            sb.append("Message from " + s[0] + ":\n" + s[1] + "\n");
+        }
+        this.messages.clear();
+        return sb.toString();
+    }
 }

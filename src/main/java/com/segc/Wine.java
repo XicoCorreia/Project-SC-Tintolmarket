@@ -42,7 +42,7 @@ public class Wine {
      *
      * @param name    The name for this wine.
      * @param image   A label for this wine model.
-     * @param ratings A list of ratings (between 0 and 5, inclusive).
+     * @param ratings A list of ratings (between 1 and 5, inclusive).
      */
     public Wine(String name, Image image, List<Integer> ratings) {
         this.name = name;
@@ -51,16 +51,16 @@ public class Wine {
     }
 
     /**
-     * @return The image associated to this Wine.
+     * @return The image associated to this wine.
      */
     public Image getImage() {
         return this.image;
     }
 
     /**
-     * @return The average classification of this Wine.
+     * @return The average rating of this wine.
      */
-    public double getClassification() {
+    public double getRating() {
         if (ratings.size() == 0) {
             return 0;
         }
@@ -69,5 +69,12 @@ public class Wine {
             sum += x;
         }
         return (double) sum / (double) this.ratings.size();
+    }
+
+    /**
+     * @param stars The rating to add to this wine's ratings.
+     */
+    public void addRating(int stars) {
+        this.ratings.add(stars);
     }
 }
