@@ -1,7 +1,7 @@
 /**
  *
  */
-package com.segc.core;
+package com.segc;
 
 /**
  * @author fc54685 Francisco Correia

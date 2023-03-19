@@ -1,4 +1,4 @@
-package com.segc.util;
+package com.segc;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -7,10 +7,10 @@ import java.util.Properties;
 
 /**
  * Uma classe singleton para carregar propriedades de um ficheiro
- * {@code server.properties}.
+ * {@code config.properties}.
  * 
  * O ficheiro de propriedades associado a esta configuracao encontra-se em
- * {@code src/main/java/resources/server.properties}.
+ * {@code src/main/java/resources/config.properties}.
  *
  * @author fc54685 Francisco Correia
  * @author fc55955 Alexandre Fonseca
@@ -25,7 +25,7 @@ public class Configuration {
     private Configuration() {
         props = new Properties(); // lazy load
         try {
-            props.load(getClass().getResourceAsStream("/server.properties"));
+            props.load(getClass().getResourceAsStream("/config.properties"));
         } catch (IOException e) {
             e.printStackTrace();
         }

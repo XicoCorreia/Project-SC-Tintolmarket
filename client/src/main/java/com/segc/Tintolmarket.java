@@ -1,7 +1,6 @@
-/**
+package com.segc; /**
  *
  */
-package com.segc.client;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -34,7 +33,7 @@ public class Tintolmarket {
     public static void main(String[] args) {
         if (args.length < 3) {
             System.out.println("Badly formed Server start.\n" +
-                    "Use: Tintolmarket <serverAddress> <userID> [password]");
+                    "Use: com.segc.Tintolmarket <serverAddress> <userID> [password]");
             System.exit(1);
         }
 

@@ -1,0 +1,3 @@
+rootProject.name = 'tintolmarket'
+include 'client'
+include 'server'

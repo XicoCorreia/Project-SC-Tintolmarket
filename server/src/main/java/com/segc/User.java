@@ -1,7 +1,7 @@
 /**
  *
  */
-package com.segc.core;
+package com.segc;
 
 import java.util.LinkedList;
 import java.util.List;
