@@ -14,7 +14,7 @@ public class Message implements Serializable {
     private final String content;
 
     /**
-     * Creates a new {@code com.segc.Message} with the given author and content.
+     * Creates a new {@code Message} with the given author and content.
      *
      * @param author  the client ID of the author of this message
      * @param content the content of this message

@@ -1,6 +1,7 @@
-package com.segc; /**
+/**
  *
  */
+package com.segc;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -19,6 +20,8 @@ import java.util.Scanner;
  */
 public class Tintolmarket {
 
+    public static final int DEFAULT_PORT = 12345;
+
     private static final String COMMANDS = "Available commands:\n" +
             "- add <wine> <image>\n" +
             "- sell <wine> <value> <quantity>\n" +
@@ -31,21 +34,25 @@ public class Tintolmarket {
 
 
     public static void main(String[] args) {
-        if (args.length < 3) {
+        if (args.length < 2) {
             System.out.println("Badly formed Server start.\n" +
-                    "Use: com.segc.Tintolmarket <serverAddress> <userID> [password]");
+                    "Use: java -jar Tintolmarket.jar <serverAddress> <userID> [password]");
             System.exit(1);
         }
 
         String serverAddress = args[0];
         String user = args[1];
-        String pass = args[2];
-        int port = 12345;
+        String pass = args.length > 2 ? args[2] : null; // TODO: ask for password if not specified
+        String host = serverAddress;
+        int port = DEFAULT_PORT;
 
-        if (serverAddress.split(":").length == 2)
-            port = Integer.parseInt(serverAddress.split(":")[1]);
+        String[] hostPort = serverAddress.split(":");
+        if (hostPort.length == 2) {
+            host = hostPort[0];
+            port = Integer.parseInt(hostPort[1]);
+        }
 
-        try (Socket socket = new Socket(serverAddress.split(":")[0], port);
+        try (Socket socket = new Socket(host, port);
              ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream())) {
             outStream.writeObject(user);

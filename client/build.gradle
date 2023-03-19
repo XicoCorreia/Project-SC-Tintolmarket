@@ -1,4 +1,5 @@
 plugins {
+    id 'application'
     id 'eclipse'
     id 'idea'
     id 'java'
@@ -11,8 +12,22 @@ dependencies {
     implementation project(':common')
 }
 
+application {
+    mainClass = 'com.segc.Tintolmarket'
+}
+
 jar {
     manifest {
-        attributes "Main-Class": "com.segc.Tintolmarket"
+        attributes "Main-Class": application.mainClass
     }
+
+    from sourceSets.main.output
+
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+    }
+
+    archiveFileName = 'Tintolmarket.jar'
+    destinationDirectory = file("$buildDir")
 }
