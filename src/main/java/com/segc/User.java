@@ -80,12 +80,12 @@ public class User {
 
     /**
      * Eliminates all the messages of this client after reading them.
-     * 
+     *
      * @return The messages of this client.
      */
     public String readMessages() {
         StringBuilder sb = new StringBuilder();
-        for(String m: this.messages) {
+        for (String m : this.messages) {
             String[] s = m.split(":");
             sb.append("Message from " + s[0] + ":\n" + s[1] + "\n");
         }
