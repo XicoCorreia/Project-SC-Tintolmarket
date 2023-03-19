@@ -63,8 +63,7 @@ public class Configuration {
             return defaultValue;
         }
         try {
-            @SuppressWarnings("unchecked")
-            Class<T> klass = (Class<T>) Class.forName(klassName);
+            @SuppressWarnings("unchecked") Class<T> klass = (Class<T>) Class.forName(klassName);
             Constructor<T> constructor = klass.getConstructor();
             return constructor.newInstance();
         } catch (ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException |

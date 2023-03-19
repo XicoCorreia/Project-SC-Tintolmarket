@@ -168,8 +168,7 @@ public class Tintolmarket {
     }
 
     public static void uploadFile(File file, ObjectOutputStream out) throws IOException {
-        try (FileInputStream fin = new FileInputStream(file);
-             InputStream fileStream = new BufferedInputStream(fin)) {
+        try (FileInputStream fin = new FileInputStream(file); InputStream fileStream = new BufferedInputStream(fin)) {
             long fileSize = file.length();
             out.writeObject(fileSize);
             byte[] buffer = new byte[1024];
