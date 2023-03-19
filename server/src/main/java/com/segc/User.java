@@ -3,18 +3,21 @@
  */
 package com.segc;
 
+import java.io.Serializable;
 import java.util.LinkedList;
-import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Queue;
 
 /**
  * @author fc54685 Francisco Correia
  * @author fc55955 Alexandre Fonseca
  * @author fc56272 Filipe Egipto
  */
-public class User {
-    private String clientId;
+public class User implements Serializable {
+    private static final long serialVersionUID = -7564097017110086431L;
+    private final String clientId;
     private double balance;
-    private List<String> messages;
+    private final Queue<Message> messages;
 
     /**
      * @param clientId The client's id.
@@ -37,7 +40,7 @@ public class User {
      * @param balance  The initial balance for this client.
      * @param messages The initial messages for this client.
      */
-    public User(String clientId, double balance, List<String> messages) {
+    public User(String clientId, double balance, Queue<Message> messages) {
         this.clientId = clientId;
         this.balance = balance;
         this.messages = messages;
@@ -74,22 +77,19 @@ public class User {
     /**
      * @param message The message to add to this client's messages.
      */
-    public void addMessage(String message) {
-        this.messages.add(message);
+    public void addMessage(Message message) {
+        messages.add(message);
     }
 
     /**
-     * Eliminates all the messages of this client after reading them.
+     * Returns a {@code message} from the message queue in FIFO order.
+     * The message is discarded after calling this method.
      *
-     * @return The messages of this client.
+     * @return a message from the message queue in FIFO order
+     * @throws NoSuchElementException if the message queue is empty
      */
-    public String readMessages() {
-        StringBuilder sb = new StringBuilder();
-        for (String m : this.messages) {
-            String[] s = m.split(":");
-            sb.append("Message from " + s[0] + ":\n" + s[1] + "\n");
-        }
-        this.messages.clear();
-        return sb.toString();
+    public Message readMessage() throws NoSuchElementException {
+        return messages.remove();
     }
+
 }

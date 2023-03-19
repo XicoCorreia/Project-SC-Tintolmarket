@@ -181,16 +181,16 @@ public class TintolmarketServer {
         return false; //Erro
     }
 
-    public boolean talk(String to_user, String message, String from_user) {
-        if (this.users.containsKey(to_user)) {
-            this.users.get(to_user).addMessage(from_user + ":" + message);
+    public boolean talk(String recipient, String message, String sender) {
+        if (users.containsKey(recipient)) {
+            users.get(recipient).addMessage(new Message(sender, message));
             return true;
         }
         return false; //Erro
     }
 
-    public String read(String user) {
-        return this.users.get(user).readMessages();
+    public Message read(String user) {
+        return users.get(user).readMessage();
     }
 
     class ServerThread extends Thread {

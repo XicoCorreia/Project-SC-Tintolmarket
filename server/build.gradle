@@ -7,11 +7,9 @@ plugins {
 group 'com.segc'
 version '1.0-SNAPSHOT'
 
-repositories {}
-
-dependencies {}
-
-test {}
+dependencies {
+    implementation project(':common')
+}
 
 jar {
     manifest {
