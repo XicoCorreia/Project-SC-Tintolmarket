@@ -1,7 +1,7 @@
 /**
  *
  */
-package com.segc;
+package com.segc.core;
 
 import java.awt.Image;
 import java.util.LinkedList;

@@ -1,7 +1,11 @@
 /**
  *
  */
-package com.segc;
+package com.segc.server;
+
+import com.segc.core.User;
+import com.segc.core.Wine;
+import com.segc.core.WineSale;
 
 import java.awt.Image;
 import java.io.*;

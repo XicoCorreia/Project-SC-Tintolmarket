@@ -1,7 +1,7 @@
 /**
  *
  */
-package com.segc;
+package com.segc.client;
 
 import java.io.BufferedInputStream;
 import java.io.File;
