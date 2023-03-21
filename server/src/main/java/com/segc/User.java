@@ -16,8 +16,8 @@ import java.util.Queue;
 public class User implements Serializable {
     private static final long serialVersionUID = -7564097017110086431L;
     private final String clientId;
-    private double balance;
     private final Queue<Message> messages;
+    private double balance;
 
     /**
      * @param clientId The client's id.
@@ -31,7 +31,6 @@ public class User implements Serializable {
      * @param balance  The initial balance for this client.
      */
     public User(String clientId, double balance) {
-
         this(clientId, balance, new LinkedList<>());
     }
 

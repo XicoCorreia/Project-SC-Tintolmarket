@@ -7,9 +7,7 @@ import java.awt.Image;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -20,12 +18,13 @@ import java.util.stream.Collectors;
  */
 public class TintolmarketServer {
     private final int port;
-    private Map<String, User> users;
+    private final Path userCredentials;
+    private Map<String, User> users = new HashMap<>();
+    private Map<String, String> credentials;
     private File winesFile;
     private Map<String, Wine> wines;
     private File wineSaleFile;
     private Map<String, WineSale> winesSale;
-    private final Path userCredentials;
 
     public TintolmarketServer() {
         this(12345);
@@ -39,9 +38,10 @@ public class TintolmarketServer {
         Configuration conf = Configuration.getInstance();
         this.port = port;
         userCredentials = Path.of(userCredentialsFilename);
+        File f = userCredentials.toFile();
 
         try {
-            if (userCredentials.toFile().createNewFile()) {
+            if (f.getParentFile().mkdirs() || f.createNewFile()) {
                 System.out.println("ficheiro '" + userCredentialsFilename + "' criado");
             }
         } catch (IOException e) {
@@ -51,7 +51,9 @@ public class TintolmarketServer {
 
     private static Map<String, String> getUsersFromFile(File file) {
         try (BufferedReader usersReader = new BufferedReader(new FileReader(file))) {
-            return usersReader.lines().map(s -> s.split(":", 2)).collect(Collectors.toMap(x -> x[0], x -> x[1]));
+            return usersReader.lines()
+                              .map(s -> s.split(":", 2))
+                              .collect(Collectors.toMap(x -> x[0], x -> x[1]));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -59,7 +61,6 @@ public class TintolmarketServer {
 
     public static void main(String[] args) {
         TintolmarketServer tms = null;
-
         if (args.length > 1) {
             System.out.println("Badly formed Server start\n");
         } else if (args.length == 1) {
@@ -75,15 +76,6 @@ public class TintolmarketServer {
             tms = new TintolmarketServer();
         }
         tms.startServer();
-    }
-
-    private void addUserCredentials(String clientId, String password) throws IOException {
-        synchronized (userCredentials) {
-            Files.writeString(userCredentials,
-                    clientId + ":" + password + System.lineSeparator(),
-                    StandardOpenOption.APPEND,
-                    StandardOpenOption.CREATE);
-        }
     }
 
     private void addWineToFile(String wine, Image image) {
@@ -190,6 +182,12 @@ public class TintolmarketServer {
         return users.get(clientId).readMessage();
     }
 
+    private void interactionLoop() {
+        while (true) {
+            // TODO: faz cenas
+        }
+    }
+
     class ServerThread extends Thread {
 
         private final Socket socket;
@@ -213,15 +211,21 @@ public class TintolmarketServer {
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(e);
                 }
-
+                boolean isAuthenticated;
                 sessionUser = users.get(clientId);
                 if (sessionUser == null) {
                     sessionUser = new User(clientId);
                     users.put(clientId, sessionUser);
-                    addUserCredentials(sessionUser.getID(), password);
-                    outStream.writeObject(true);
+                    isAuthenticated = true;
+                    AuthenticationService.getInstance().registerUser(clientId, password);
                 } else {
-                    outStream.writeObject(validateUser(clientId, password));
+                    isAuthenticated = AuthenticationService.getInstance().authenticateUser(clientId, password);
+                }
+                outStream.writeObject(isAuthenticated);
+                if (isAuthenticated) {
+                    // interactionLoop(); // TODO
+                } else {
+                    System.out.println("Authentication failed for user '" + clientId + "'.");
                 }
                 socket.shutdownOutput();
                 socket.close();
@@ -230,9 +234,5 @@ public class TintolmarketServer {
                 e.printStackTrace();
             }
         }
-    }
-
-    private boolean validateUser(String clientId, String password) {
-        return false; // TODO
     }
 }
