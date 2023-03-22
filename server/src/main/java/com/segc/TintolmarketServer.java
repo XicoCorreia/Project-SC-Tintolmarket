@@ -25,6 +25,27 @@ public class TintolmarketServer {
     private Map<String, Wine> wines;
     private File wineSaleFile;
     private Map<String, WineSale> winesSale;
+    private static final String BADLY_FORMED_START = "Badly formed Server start\n";
+
+    private static String USER_EXCEPTION_MESSAGE(String recipient) {
+        return "There is no user '" + recipient + "'.";
+    }
+
+    private static String NEW_WINE_EXCEPTION_MESSAGE(String wine) {
+        return "There is already a wine named " + wine + ".";
+    }
+
+    private static String NO_WINE_EXCEPTION_MESSAGE(String wine) {
+        return "There is no wine '" + wine + "'.";
+    }
+
+    private static String INSUFFICIENT_BALANCE_EXCEPTION_MESSAGE(double total, double balance) {
+        return "Not have enough money. The total cost is " + total + "$$ and you have " + balance + "$$.";
+    }
+
+    private static String NO_SUCH_QUANTITY_EXCEPTION_MESSAGE(int quantity) {
+        return "Tried to buy more units than possible. There are " + quantity + " units available.";
+    }
 
     public TintolmarketServer() {
         this(12345);
@@ -62,13 +83,13 @@ public class TintolmarketServer {
     public static void main(String[] args) {
         TintolmarketServer tms = null;
         if (args.length > 1) {
-            System.out.println("Badly formed Server start\n");
+            System.out.println(BADLY_FORMED_START);
         } else if (args.length == 1) {
             int n = 0;
             try {
                 n = Integer.parseInt(args[0]);
             } catch (NumberFormatException e) {
-                System.out.println("Badly formed Server start\n");
+                System.out.println(BADLY_FORMED_START);
                 System.exit(1);
             }
             tms = new TintolmarketServer(n);
@@ -105,26 +126,24 @@ public class TintolmarketServer {
         }
     }
 
-    //Falta colocar unidades a 0
-    //Fazer log para o ficheiro
-    public boolean add(String wine, Image image) {
+    public void add(String wine, Image image) throws WineException {
         if (!this.wines.containsKey(wine)) {
             this.wines.put(wine, new Wine(wine, image));
             this.addWineToFile(wine, image);
-            return true;
+            return;
         }
-        return false; //Erro
+        throw new WineException(NEW_WINE_EXCEPTION_MESSAGE(wine));
     }
 
-    public boolean sell(String wine, int value, int quantity, User user) {
+    public void sell(String wine, int value, int quantity, User user) throws WineException {
         if (this.wines.containsKey(wine)) {
             this.winesSale.put(wine, new WineSale(this.wines.get(wine), user, value, quantity));
-            return true;
+            return;
         }
-        return false; //Erro
+        throw new WineException(NO_WINE_EXCEPTION_MESSAGE(wine));
     }
 
-    public String view(String wine) {
+    public String view(String wine) throws WineException {
         if (this.winesSale.containsKey(wine)) {
             WineSale wineSale = this.winesSale.get(wine);
             Wine w = this.wines.get(wine);
@@ -136,46 +155,46 @@ public class TintolmarketServer {
             }
             return s;
         }
-        return "false"; //Erro
+        throw new WineException(NO_WINE_EXCEPTION_MESSAGE(wine));
     }
 
-    public boolean buy(String wine, String seller, int quantity, String buyer) {
+    public void buy(String wine, String seller, int quantity, String buyer)
+            throws WineException, NoSuchQuantityException, InsufficientBalanceException {
         User b = this.users.get(buyer);
         User s = this.users.get(seller);
         if (!this.winesSale.containsKey(wine)) {
-            return false; //Erro - não existe o vinho
+            throw new WineException(NO_WINE_EXCEPTION_MESSAGE(wine));
         }
         WineSale wineSale = this.winesSale.get(wine);
         double total = wineSale.getValue() * quantity;
         if (wineSale.getQuantity() < quantity) {
-            return false; //Erro - não existem unidades suficientes
+            throw new NoSuchQuantityException(NO_SUCH_QUANTITY_EXCEPTION_MESSAGE(wineSale.getQuantity()));
         } else if (total > b.getBalance()) {
-            return false; //Erro - não tem saldo suficiente
+            throw new InsufficientBalanceException(INSUFFICIENT_BALANCE_EXCEPTION_MESSAGE(total, b.getBalance()));
         }
         wineSale.removeQuantity(quantity);
         s.addBalance(total);
         b.removeBalance(total);
-        return true;
     }
 
     public double wallet(String clientId) {
         return this.users.get(clientId).getBalance();
     }
 
-    public boolean classify(String wine, int stars) {
+    public void classify(String wine, int stars) throws WineException {
         if (this.wines.containsKey(wine)) {
             this.wines.get(wine).addRating(stars);
-            return true;
+            return;
         }
-        return false; //Erro
+        throw new WineException(NO_WINE_EXCEPTION_MESSAGE(wine));
     }
 
-    public boolean talk(String recipient, String message, String sender) {
+    public void talk(String recipient, String message, String sender) throws UserException {
         if (users.containsKey(recipient)) {
             users.get(recipient).addMessage(new Message(sender, message));
-            return true;
+            return;
         }
-        return false; //Erro
+        throw new UserException(USER_EXCEPTION_MESSAGE(recipient));
     }
 
     public Message read(String clientId) {
