@@ -62,9 +62,9 @@ public class Tintolmarket {
                 System.out.println("Authentication failed.");
                 System.exit(1);
             }
-            System.out.println("Authenticated.");
-
-            System.out.print(COMMANDS);
+            
+            System.out.print("Authenticated.\n" + COMMANDS);
+            
             Scanner sc = new Scanner(System.in);
 
             while (sc.hasNext()) {
@@ -73,75 +73,35 @@ public class Tintolmarket {
                 switch (c[0]) {
                     case "add":
                     case "a":
-                        if (c.length != 3) {
-                            System.out.println("Error in the command");
-                        }
-                        outStream.writeObject(c[0]);
-                        outStream.writeObject(c[1]);
-                        uploadFile(new File(c[2]), outStream);
+                    	add(outStream, c);
                         break;
                     case "sell":
                     case "s":
-                        if (c.length != 4) {
-                            System.out.println("Error in the command");
-                            break;
-                        }
-                        writeCommands(outStream, command);
-
+                        sell(outStream, c);
                         break;
                     case "view":
                     case "v":
-                        if (c.length != 2) {
-                            System.out.println("Error in the command");
-                            break;
-                        }
-                        writeCommands(outStream, command);
-
+                        view(outStream, c);
                         break;
                     case "buy":
                     case "b":
-                        if (c.length != 4) {
-                            System.out.println("Error in the command");
-                            break;
-                        }
-                        writeCommands(outStream, command);
-
+                        buy(outStream, c);
                         break;
                     case "wallet":
                     case "w":
-                        if (c.length != 1) {
-                            System.out.println("Error in the command");
-                            break;
-                        }
-                        outStream.writeObject(command);
-
+                        wallet(outStream, c);
                         break;
                     case "classify":
                     case "c":
-                        if (c.length != 3) {
-                            System.out.println("Error in the command");
-                            break;
-                        }
-                        writeCommands(outStream, command);
-
+                        classify(outStream, c);
                         break;
                     case "talk":
                     case "t":
-                        if (c.length != 3) {
-                            System.out.println("Error in the command");
-                            break;
-                        }
-                        writeCommands(outStream, command);
-
+                    	talk(outStream, c);
                         break;
                     case "read":
                     case "r":
-                        if (c.length != 1) {
-                            System.out.println("Error in the command");
-                            break;
-                        }
-                        outStream.writeObject(command);
-
+                    	read(outStream, c);
                         break;
                     default:
                         throw new IllegalArgumentException("Unexpected command: " + command);
@@ -154,20 +114,78 @@ public class Tintolmarket {
         }
 
     }
-
-    private static void writeCommands(ObjectOutputStream outStream, String com) {
-        String[] c = com.split(" ");
-
-        for (String a : c) {
-            try {
-                outStream.writeObject(a);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+    
+    private static void add(ObjectOutputStream outStream, String[] command) throws IOException {
+        if (command.length != 3) {
+            System.out.println("Error in the command");
         }
+        outStream.writeObject(command[0]);
+        outStream.writeObject(command[1]);
+        uploadFile(new File(command[2]), outStream);
     }
-
-    public static void uploadFile(File file, ObjectOutputStream out) throws IOException {
+    
+    private static void sell(ObjectOutputStream outStream, String[] command) throws IOException {
+        if (command.length != 4) {
+            System.out.println("Error in the command");
+        }
+        outStream.writeObject(command[0]);
+        outStream.writeObject(command[1]);
+        outStream.writeObject(command[2]);
+        outStream.writeObject(command[3]);
+    }
+    
+    private static void view(ObjectOutputStream outStream, String[] command) throws IOException {
+        if (command.length != 2) {
+            System.out.println("Error in the command");
+        }
+        outStream.writeObject(command[0]);
+        outStream.writeObject(command[1]);
+    }
+    
+    
+    private static void buy(ObjectOutputStream outStream, String[] command) throws IOException {
+        if (command.length != 4) {
+            System.out.println("Error in the command");
+        }
+        outStream.writeObject(command[0]);
+        outStream.writeObject(command[1]);
+        outStream.writeObject(command[2]);
+        outStream.writeObject(command[3]);
+    }
+    
+    private static void wallet(ObjectOutputStream outStream, String[] command) throws IOException {
+        if (command.length != 1) {
+            System.out.println("Error in the command");
+        }
+        outStream.writeObject(command[0]);
+    }
+    
+    private static void classify(ObjectOutputStream outStream, String[] command) throws IOException {
+        if (command.length != 3) {
+            System.out.println("Error in the command");
+        }
+        outStream.writeObject(command[0]);
+        outStream.writeObject(command[1]);
+        outStream.writeObject(command[2]);
+    }
+    
+    private static void talk(ObjectOutputStream outStream, String[] command) throws IOException {
+        if (command.length != 3) {
+            System.out.println("Error in the command");
+        }
+        outStream.writeObject(command[0]);
+        outStream.writeObject(command[1]);
+        outStream.writeObject(command[2]);
+    }
+    
+    private static void read(ObjectOutputStream outStream, String[] command) throws IOException {
+        if (command.length != 1) {
+            System.out.println("Error in the command");
+        }
+        outStream.writeObject(command[0]);
+    }
+    
+    private static void uploadFile(File file, ObjectOutputStream out) throws IOException {
         try (FileInputStream fin = new FileInputStream(file); InputStream fileStream = new BufferedInputStream(fin)) {
             long fileSize = file.length();
             out.writeObject(fileSize);
