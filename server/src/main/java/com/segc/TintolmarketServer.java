@@ -203,13 +203,17 @@ public class TintolmarketServer {
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(e);
                 }
-                boolean isAuthenticated;
+                boolean isAuthenticated = false;
                 sessionUser = users.get(clientId);
                 if (sessionUser == null) {
                     sessionUser = new User(clientId);
                     users.put(clientId, sessionUser);
-                    isAuthenticated = true;
-                    AuthenticationService.getInstance().registerUser(clientId, password);
+                    try {
+                        AuthenticationService.getInstance().registerUser(clientId, password);
+                        isAuthenticated = true;
+                    } catch (DuplicateElementException e) {
+                        System.out.printf("Unable to register user '%s': user already exists.%n", clientId);
+                    }
                 } else {
                     isAuthenticated = AuthenticationService.getInstance().authenticateUser(clientId, password);
                 }

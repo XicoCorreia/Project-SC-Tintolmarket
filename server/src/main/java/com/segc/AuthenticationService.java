@@ -1,6 +1,9 @@
 package com.segc;
 
+import com.segc.exception.DuplicateElementException;
+
 import java.io.*;
+import java.util.NoSuchElementException;
 
 /**
  * A singleton class that handles authentication.
@@ -18,8 +21,7 @@ public class AuthenticationService {
         userCredentials = new File(Configuration.getInstance().getValue("userCredentials"));
         try {
             if (userCredentials.getParentFile().mkdirs() || userCredentials.createNewFile()) {
-                System.out.println(getClass().getName() + ": Ficheiro de credenciais de utilizadores criado.");
-                System.out.println(getClass().getName() + ": " + userCredentials.getAbsolutePath());
+                System.out.println(getClass().getSimpleName() + ": created empty user credentials file.");
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -35,21 +37,29 @@ public class AuthenticationService {
         return instance;
     }
 
-    public boolean authenticateUser(String clientId, String password) {
-        String pattern = clientId + ":" + password;
+    public boolean authenticateUser(String clientId, String password) throws NoSuchElementException {
+        return getUserCredentials(clientId).equals(clientId + ":" + password);
+    }
+
+    private String getUserCredentials(String clientId) throws NoSuchElementException {
+        String pattern = clientId + ":";
         try (BufferedReader usersReader = new BufferedReader(new FileReader(userCredentials))) {
-            return usersReader.lines().anyMatch(line -> line.equals(pattern));
+            return usersReader.lines().dropWhile(line -> !line.startsWith(pattern)).findFirst().orElseThrow();
         } catch (IOException e) {
-            e.printStackTrace();
-            return false;
+            throw new RuntimeException(e);
         }
     }
 
-    public void registerUser(String clientId, String password) {
-        try (FileWriter fw = new FileWriter(userCredentials, true)) {
-            fw.write(clientId + ":" + password + "\n");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    public void registerUser(String clientId, String password) throws DuplicateElementException {
+        try {
+            getUserCredentials(clientId);
+            throw new DuplicateElementException();
+        } catch (NoSuchElementException e) {
+            try (FileWriter fw = new FileWriter(userCredentials, true); BufferedWriter bw = new BufferedWriter(fw)) {
+                bw.write(clientId + ":" + password + "\n");
+            } catch (IOException ioException) {
+                throw new RuntimeException(ioException);
+            }
         }
     }
 }
