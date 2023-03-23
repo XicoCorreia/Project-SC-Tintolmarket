@@ -3,7 +3,9 @@
  */
 package com.segc;
 
-import java.awt.Image;
+import javax.swing.*;
+import java.awt.*;
+import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -12,10 +14,11 @@ import java.util.List;
  * @author fc55955 Alexandre Fonseca
  * @author fc56272 Filipe Egipto
  */
-public class Wine {
-    private String name;
-    private Image image;
-    private List<Integer> ratings;
+public class Wine implements Serializable {
+    private static final long serialVersionUID = 102672917111219812L;
+    private final String name;
+    private final String labelPath;
+    private final List<Integer> ratings;
 
     /**
      * Creates a {@code Wine} with the given name.
@@ -29,32 +32,46 @@ public class Wine {
     /**
      * Creates a {@code Wine} with the given name and label.
      *
-     * @param name  The name for this wine.
-     * @param image A label for this wine model.
+     * @param name      the name for this wine.
+     * @param labelPath the path to an image of this wine's label.
      */
-    public Wine(String name, Image image) {
-
-        this(name, image, new LinkedList<>());
+    public Wine(String name, String labelPath) {
+        this(name, labelPath, new LinkedList<>());
     }
 
     /**
      * Creates a {@code Wine} with the given name, label and list of ratings.
      *
-     * @param name    The name for this wine.
-     * @param image   A label for this wine model.
-     * @param ratings A list of ratings (between 1 and 5, inclusive).
+     * @param name      The name for this wine.
+     * @param labelPath The path to an image of this wine's label.
+     * @param ratings   A list of ratings (between 1 and 5, inclusive).
      */
-    public Wine(String name, Image image, List<Integer> ratings) {
+    public Wine(String name, String labelPath, List<Integer> ratings) {
         this.name = name;
-        this.image = image;
+        this.labelPath = labelPath;
         this.ratings = ratings;
     }
 
     /**
-     * @return The image associated to this wine.
+     * @return The path to an image of this wine's label.
      */
-    public Image getImage() {
-        return this.image;
+    public String getLabelPath() {
+        return labelPath;
+    }
+
+    /**
+     * Draws this wine's label.
+     */
+    public void drawLabel() {
+        ImageIcon image = new ImageIcon(labelPath);
+        JFrame jFrame = new JFrame(this.name);
+        jFrame.setLayout(new BorderLayout());
+        JLabel jLabel = new JLabel(image);
+        jFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        jFrame.add(jLabel);
+        jFrame.setLocationRelativeTo(null);
+        jFrame.pack();
+        jFrame.setVisible(true);
     }
 
     /**

@@ -5,7 +5,6 @@ package com.segc;
 
 import com.segc.exception.DuplicateElementException;
 
-import java.awt.Image;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -75,9 +74,9 @@ public class TintolmarketServer {
         tms.startServer();
     }
 
-    private void addWineToFile(String wine, Image image) {
+    private void addWineToFile(String wine, String labelPath) {
         try (FileWriter fw = new FileWriter(winesFile, true); BufferedWriter bw = new BufferedWriter(fw)) {
-            bw.write(wine + ":" + image); //TODO
+            bw.write(wine + ":" + labelPath); //TODO
             bw.newLine();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -102,10 +101,10 @@ public class TintolmarketServer {
         }
     }
 
-    public void add(String wine, Image image) {
+    public void add(String wine, String labelPath) {
         if (!this.wines.containsKey(wine)) {
-            this.wines.put(wine, new Wine(wine, image));
-            this.addWineToFile(wine, image);
+            this.wines.put(wine, new Wine(wine, labelPath));
+            this.addWineToFile(wine, labelPath);
         } else {
             throw new DuplicateElementException();
         }
@@ -123,7 +122,7 @@ public class TintolmarketServer {
         if (this.winesSale.containsKey(wine)) {
             WineSale wineSale = this.winesSale.get(wine);
             Wine w = this.wines.get(wine);
-            String s = "Wine " + wine + ":\n" + w.getImage() + "\nAverage classification: " + w.getRating();
+            String s = "Wine " + wine + ":\n" + w.getLabelPath() + "\nAverage classification: " + w.getRating();
             int qt = wineSale.getQuantity();
             if (qt > 0) {
                 return s + "\nSelling user: " + wineSale.getUser().getID() + "\nPrice:" + wineSale.getValue() +
