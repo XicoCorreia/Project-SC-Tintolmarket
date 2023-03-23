@@ -86,22 +86,6 @@ public class TintolmarketServer {
         }
     }
 
-    public String view(String wine) {
-
-        if (this.winesSale.containsKey(wine)) {
-            WineListing wineListing = this.winesSale.get(wine);
-            Wine w = this.wines.get(wine);
-            String s = "Wine " + wine + ":\n" + w.getLabelPath() + "\nAverage classification: " + w.getRating();
-            int qt = wineListing.getQuantity();
-            if (qt > 0) {
-                return s + "\nSelling user: " + wineListing.getSellerId() + "\nPrice:" + wineListing.getCostPerUnit() +
-                        "\nQuantity available:" + qt;
-            }
-            return s;
-        }
-        throw new NoSuchElementException();
-    }
-
     public void buy(String wine, String seller, int quantity, String buyer) {
         User b = this.users.get(buyer);
         User s = this.users.get(seller);
@@ -122,14 +106,6 @@ public class TintolmarketServer {
 
     public double wallet(String clientId) {
         return this.users.get(clientId).getBalance();
-    }
-
-    public void classify(String wine, int stars) {
-        if (this.wines.containsKey(wine)) {
-            this.wines.get(wine).addRating(stars);
-            return;
-        }
-        throw new NoSuchElementException();
     }
 
     public void talk(String recipient, String message, String sender) {

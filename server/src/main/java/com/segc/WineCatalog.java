@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 /**
  * @author fc54685 Francisco Correia
@@ -42,6 +43,14 @@ public class WineCatalog {
         if (wines.putIfAbsent(wineName, wine) != null) {
             throw new DuplicateElementException();
         }
+    }
+
+    public String viewWine(String wineName) {
+        return Optional.of(wines.get(wineName)).orElseThrow().toString();
+    }
+
+    public void addRating(String wineName, int stars) {
+        Optional.of(wines.get(wineName)).orElseThrow().addRating(stars);
     }
 
 }

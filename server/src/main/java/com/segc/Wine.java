@@ -113,6 +113,9 @@ public class Wine implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("Wine '%s' has an average rating of %.2f%n.", name, getRating());
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("Wine '%s' has an average rating of %.2f%n.", name, getRating()));
+        wineListings.values().forEach(sb::append);
+        return sb.toString();
     }
 }

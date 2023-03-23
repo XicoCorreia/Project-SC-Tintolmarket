@@ -56,5 +56,13 @@ public class WineListing implements Serializable {
     public double getCostPerUnit() {
         return this.costPerUnit;
     }
+
+    @Override
+    public String toString() {
+        return String.format("  Seller: %s%n  Cost (per unit): %.2f%n  Quantity: %d%n",
+                sellerId,
+                costPerUnit,
+                quantity);
+    }
 }
 
