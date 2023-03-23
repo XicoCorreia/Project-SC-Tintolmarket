@@ -3,6 +3,8 @@
  */
 package com.segc;
 
+import com.segc.exception.DuplicateElementException;
+
 import java.awt.Image;
 import java.io.*;
 import java.net.ServerSocket;
@@ -17,6 +19,14 @@ import java.util.stream.Collectors;
  * @author fc56272 Filipe Egipto
  */
 public class TintolmarketServer {
+    private static final int DEFAULT_PORT = 12345;
+
+    /* Usage: String.format(NO_SUCH_ELEMENT_EXCEPTION_MESSAGE, x.getClass().getSimpleName(), x.getName()) */
+    private static final String DUPLICATE_ELEMENT_EXCEPTION_MESSAGE = "There is already a %s named '%s'.";
+    private static final String NO_SUCH_ELEMENT_EXCEPTION_MESSAGE = "The %s named '%s' does not exist.";
+    private static final String INSUFFICIENT_BALANCE_EXCEPTION_MESSAGE = "Insufficient balance: needed %.2f; got %.2f";
+    private static final String INVALID_QUANTITY_EXCEPTION_MESSAGE
+            = "Requested %d units but there are %d units available.";
     private final int port;
     private final Path userCredentials;
     private Map<String, User> users = new HashMap<>();
@@ -25,38 +35,12 @@ public class TintolmarketServer {
     private Map<String, Wine> wines;
     private File wineSaleFile;
     private Map<String, WineSale> winesSale;
-    private static final String BADLY_FORMED_START = "Badly formed Server start\n";
-
-    private static String USER_EXCEPTION_MESSAGE(String recipient) {
-        return "There is no user '" + recipient + "'.";
-    }
-
-    private static String NEW_WINE_EXCEPTION_MESSAGE(String wine) {
-        return "There is already a wine named " + wine + ".";
-    }
-
-    private static String NO_WINE_EXCEPTION_MESSAGE(String wine) {
-        return "There is no wine '" + wine + "'.";
-    }
-
-    private static String INSUFFICIENT_BALANCE_EXCEPTION_MESSAGE(double total, double balance) {
-        return "Not have enough money. The total cost is " + total + "$$ and you have " + balance + "$$.";
-    }
-
-    private static String NO_SUCH_QUANTITY_EXCEPTION_MESSAGE(int quantity) {
-        return "Tried to buy more units than possible. There are " + quantity + " units available.";
-    }
-
-    public TintolmarketServer() {
-        this(12345);
-    }
 
     public TintolmarketServer(int port) {
         this(port, Configuration.getInstance().getValue("userCredentials"));
     }
 
     public TintolmarketServer(int port, String userCredentialsFilename) {
-        Configuration conf = Configuration.getInstance();
         this.port = port;
         userCredentials = Path.of(userCredentialsFilename);
         File f = userCredentials.toFile();
@@ -81,21 +65,13 @@ public class TintolmarketServer {
     }
 
     public static void main(String[] args) {
-        TintolmarketServer tms = null;
+        int port = DEFAULT_PORT;
         if (args.length > 1) {
-            System.out.println(BADLY_FORMED_START);
+            throw new IllegalArgumentException("Too many arguments: expected 0 or 1, got " + args.length);
         } else if (args.length == 1) {
-            int n = 0;
-            try {
-                n = Integer.parseInt(args[0]);
-            } catch (NumberFormatException e) {
-                System.out.println(BADLY_FORMED_START);
-                System.exit(1);
-            }
-            tms = new TintolmarketServer(n);
-        } else {
-            tms = new TintolmarketServer();
+            port = Integer.parseInt(args[0]);
         }
+        TintolmarketServer tms = new TintolmarketServer(port);
         tms.startServer();
     }
 
@@ -126,24 +102,24 @@ public class TintolmarketServer {
         }
     }
 
-    public void add(String wine, Image image) throws WineException {
+    public void add(String wine, Image image) {
         if (!this.wines.containsKey(wine)) {
             this.wines.put(wine, new Wine(wine, image));
             this.addWineToFile(wine, image);
-            return;
+        } else {
+            throw new DuplicateElementException();
         }
-        throw new WineException(NEW_WINE_EXCEPTION_MESSAGE(wine));
     }
 
-    public void sell(String wine, int value, int quantity, User user) throws WineException {
+    public void sell(String wine, int value, int quantity, User user) {
         if (this.wines.containsKey(wine)) {
             this.winesSale.put(wine, new WineSale(this.wines.get(wine), user, value, quantity));
-            return;
+        } else {
+            throw new NoSuchElementException();
         }
-        throw new WineException(NO_WINE_EXCEPTION_MESSAGE(wine));
     }
 
-    public String view(String wine) throws WineException {
+    public String view(String wine) {
         if (this.winesSale.containsKey(wine)) {
             WineSale wineSale = this.winesSale.get(wine);
             Wine w = this.wines.get(wine);
@@ -155,22 +131,21 @@ public class TintolmarketServer {
             }
             return s;
         }
-        throw new WineException(NO_WINE_EXCEPTION_MESSAGE(wine));
+        throw new NoSuchElementException();
     }
 
-    public void buy(String wine, String seller, int quantity, String buyer)
-            throws WineException, NoSuchQuantityException, InsufficientBalanceException {
+    public void buy(String wine, String seller, int quantity, String buyer) {
         User b = this.users.get(buyer);
         User s = this.users.get(seller);
         if (!this.winesSale.containsKey(wine)) {
-            throw new WineException(NO_WINE_EXCEPTION_MESSAGE(wine));
+            throw new NoSuchElementException();
         }
         WineSale wineSale = this.winesSale.get(wine);
         double total = wineSale.getValue() * quantity;
         if (wineSale.getQuantity() < quantity) {
-            throw new NoSuchQuantityException(NO_SUCH_QUANTITY_EXCEPTION_MESSAGE(wineSale.getQuantity()));
+            throw new IllegalArgumentException(INVALID_QUANTITY_EXCEPTION_MESSAGE);
         } else if (total > b.getBalance()) {
-            throw new InsufficientBalanceException(INSUFFICIENT_BALANCE_EXCEPTION_MESSAGE(total, b.getBalance()));
+            throw new IllegalArgumentException(INSUFFICIENT_BALANCE_EXCEPTION_MESSAGE);
         }
         wineSale.removeQuantity(quantity);
         s.addBalance(total);
@@ -181,20 +156,20 @@ public class TintolmarketServer {
         return this.users.get(clientId).getBalance();
     }
 
-    public void classify(String wine, int stars) throws WineException {
+    public void classify(String wine, int stars) {
         if (this.wines.containsKey(wine)) {
             this.wines.get(wine).addRating(stars);
             return;
         }
-        throw new WineException(NO_WINE_EXCEPTION_MESSAGE(wine));
+        throw new NoSuchElementException();
     }
 
-    public void talk(String recipient, String message, String sender) throws UserException {
+    public void talk(String recipient, String message, String sender) {
         if (users.containsKey(recipient)) {
             users.get(recipient).addMessage(new Message(sender, message));
             return;
         }
-        throw new UserException(USER_EXCEPTION_MESSAGE(recipient));
+        throw new NoSuchElementException();
     }
 
     public Message read(String clientId) {
@@ -214,7 +189,6 @@ public class TintolmarketServer {
 
         ServerThread(Socket inSoc) {
             this.socket = inSoc;
-            System.out.println("thread do server para cada cliente");
         }
 
         @Override

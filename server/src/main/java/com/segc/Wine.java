@@ -58,6 +58,13 @@ public class Wine {
     }
 
     /**
+     * @return The name of this wine.
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
      * @return The average rating of this wine.
      */
     public double getRating() {

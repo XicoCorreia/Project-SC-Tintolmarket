@@ -9,8 +9,8 @@ package com.segc;
  * @author fc56272 Filipe Egipto
  */
 public class WineSale {
-    private Wine wine;
-    private User seller;
+    private final Wine wine;
+    private final User seller;
     private double value;
     private int quantity;
 

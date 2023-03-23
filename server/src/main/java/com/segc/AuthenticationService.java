@@ -40,7 +40,8 @@ public class AuthenticationService {
         try (BufferedReader usersReader = new BufferedReader(new FileReader(userCredentials))) {
             return usersReader.lines().anyMatch(line -> line.equals(pattern));
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
+            return false;
         }
     }
 
