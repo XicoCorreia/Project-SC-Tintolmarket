@@ -48,7 +48,7 @@ public class User implements Serializable {
     /**
      * @return The ID of this User.
      */
-    public String getID() {
+    public String getId() {
         return this.clientId;
     }
 

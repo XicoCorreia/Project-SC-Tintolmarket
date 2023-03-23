@@ -8,7 +8,6 @@ import com.segc.exception.DuplicateElementException;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -19,31 +18,18 @@ import java.util.stream.Collectors;
  */
 public class TintolmarketServer {
     private static final int DEFAULT_PORT = 12345;
-
-    /* Usage: String.format(NO_SUCH_ELEMENT_EXCEPTION_MESSAGE, x.getClass().getSimpleName(), x.getName()) */
-    private static final String DUPLICATE_ELEMENT_EXCEPTION_MESSAGE = "There is already a %s named '%s'.";
-    private static final String NO_SUCH_ELEMENT_EXCEPTION_MESSAGE = "The %s named '%s' does not exist.";
-    private static final String INSUFFICIENT_BALANCE_EXCEPTION_MESSAGE = "Insufficient balance: needed %.2f; got %.2f";
-    private static final String INVALID_QUANTITY_EXCEPTION_MESSAGE
-            = "Requested %d units but there are %d units available.";
     private final int port;
-    private final Path userCredentials;
     private Map<String, User> users = new HashMap<>();
-    private Map<String, String> credentials;
-    private File winesFile;
-    private Map<String, Wine> wines;
-    private File wineSaleFile;
-    private Map<String, WineSale> winesSale;
+    private final WineCatalog wineCatalog;
 
     public TintolmarketServer(int port) {
-        this(port, Configuration.getInstance().getValue("userCredentials"));
+        this(port, Configuration.getInstance().getValue("userCredentials"), new WineCatalog());
     }
 
-    public TintolmarketServer(int port, String userCredentialsFilename) {
+    public TintolmarketServer(int port, String userCredentialsFilename, WineCatalog wineCatalog) {
         this.port = port;
-        userCredentials = Path.of(userCredentialsFilename);
-        File f = userCredentials.toFile();
-
+        this.wineCatalog = wineCatalog;
+        File f = new File(userCredentialsFilename);
         try {
             if (f.getParentFile().mkdirs() || f.createNewFile()) {
                 System.out.println("ficheiro '" + userCredentialsFilename + "' criado");
@@ -74,15 +60,6 @@ public class TintolmarketServer {
         tms.startServer();
     }
 
-    private void addWineToFile(String wine, String labelPath) {
-        try (FileWriter fw = new FileWriter(winesFile, true); BufferedWriter bw = new BufferedWriter(fw)) {
-            bw.write(wine + ":" + labelPath); //TODO
-            bw.newLine();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public void startServer() {
         try (ServerSocket sSoc = new ServerSocket(this.port)) {
             while (true) {
@@ -101,31 +78,23 @@ public class TintolmarketServer {
         }
     }
 
-    public void add(String wine, String labelPath) {
-        if (!this.wines.containsKey(wine)) {
-            this.wines.put(wine, new Wine(wine, labelPath));
-            this.addWineToFile(wine, labelPath);
-        } else {
-            throw new DuplicateElementException();
-        }
-    }
-
     public void sell(String wine, int value, int quantity, User user) {
         if (this.wines.containsKey(wine)) {
-            this.winesSale.put(wine, new WineSale(this.wines.get(wine), user, value, quantity));
+            this.winesSale.put(wine, new WineListing(user.getId(), value, quantity));
         } else {
             throw new NoSuchElementException();
         }
     }
 
     public String view(String wine) {
+
         if (this.winesSale.containsKey(wine)) {
-            WineSale wineSale = this.winesSale.get(wine);
+            WineListing wineListing = this.winesSale.get(wine);
             Wine w = this.wines.get(wine);
             String s = "Wine " + wine + ":\n" + w.getLabelPath() + "\nAverage classification: " + w.getRating();
-            int qt = wineSale.getQuantity();
+            int qt = wineListing.getQuantity();
             if (qt > 0) {
-                return s + "\nSelling user: " + wineSale.getUser().getID() + "\nPrice:" + wineSale.getValue() +
+                return s + "\nSelling user: " + wineListing.getSellerId() + "\nPrice:" + wineListing.getCostPerUnit() +
                         "\nQuantity available:" + qt;
             }
             return s;
@@ -139,14 +108,14 @@ public class TintolmarketServer {
         if (!this.winesSale.containsKey(wine)) {
             throw new NoSuchElementException();
         }
-        WineSale wineSale = this.winesSale.get(wine);
-        double total = wineSale.getValue() * quantity;
-        if (wineSale.getQuantity() < quantity) {
+        WineListing wineListing = this.winesSale.get(wine);
+        double total = wineListing.getCostPerUnit() * quantity;
+        if (wineListing.getQuantity() < quantity) {
             throw new IllegalArgumentException(INVALID_QUANTITY_EXCEPTION_MESSAGE);
         } else if (total > b.getBalance()) {
             throw new IllegalArgumentException(INSUFFICIENT_BALANCE_EXCEPTION_MESSAGE);
         }
-        wineSale.removeQuantity(quantity);
+        wineListing.removeQuantity(quantity);
         s.addBalance(total);
         b.removeBalance(total);
     }

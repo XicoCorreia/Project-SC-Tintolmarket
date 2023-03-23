@@ -6,8 +6,8 @@ package com.segc;
 import javax.swing.*;
 import java.awt.*;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 
 /**
  * @author fc54685 Francisco Correia
@@ -18,19 +18,11 @@ public class Wine implements Serializable {
     private static final long serialVersionUID = 102672917111219812L;
     private final String name;
     private final String labelPath;
-    private final List<Integer> ratings;
+    private final LinkedList<Integer> ratings;
+    private final HashMap<String, WineListing> wineListings;
 
     /**
-     * Creates a {@code Wine} with the given name.
-     *
-     * @param name The name for this wine.
-     */
-    public Wine(String name) {
-        this(name, null);
-    }
-
-    /**
-     * Creates a {@code Wine} with the given name and label.
+     * Creates a {@link Wine} with the given name and label.
      *
      * @param name      the name for this wine.
      * @param labelPath the path to an image of this wine's label.
@@ -40,16 +32,29 @@ public class Wine implements Serializable {
     }
 
     /**
-     * Creates a {@code Wine} with the given name, label and list of ratings.
+     * Creates a {@link Wine} with the given name, label and list of ratings.
      *
      * @param name      The name for this wine.
      * @param labelPath The path to an image of this wine's label.
      * @param ratings   A list of ratings (between 1 and 5, inclusive).
      */
-    public Wine(String name, String labelPath, List<Integer> ratings) {
+    public Wine(String name, String labelPath, LinkedList<Integer> ratings) {
+        this(name, labelPath, ratings, new HashMap<>());
+    }
+
+    /**
+     * Creates a {@link Wine} with the given name, label, list of ratings and collection of wine listings.
+     *
+     * @param name         The name for this wine.
+     * @param labelPath    The path to an image of this wine's label.
+     * @param ratings      A list of ratings (between 1 and 5, inclusive).
+     * @param wineListings A collection of {@link WineListing} listed by a seller ({@link User}) with the given id.
+     */
+    public Wine(String name, String labelPath, LinkedList<Integer> ratings, HashMap<String, WineListing> wineListings) {
         this.name = name;
         this.labelPath = labelPath;
         this.ratings = ratings;
+        this.wineListings = wineListings;
     }
 
     /**
@@ -100,5 +105,14 @@ public class Wine implements Serializable {
      */
     public void addRating(int stars) {
         this.ratings.add(stars);
+    }
+
+    public HashMap<String, WineListing> getListings() {
+        return this.wineListings;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Wine '%s' has an average rating of %.2f%n.", name, getRating());
     }
 }
