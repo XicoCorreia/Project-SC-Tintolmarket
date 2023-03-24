@@ -117,121 +117,111 @@ public class TintolmarketServer {
             throws ClassNotFoundException, IOException {
         boolean isExiting = false;
         while (!isExiting) {
-            String command = ((String) inStream.readObject()).toLowerCase();
+            Opcode command = (Opcode) inStream.readObject();
             switch (command) {
-                case "add":
-                case "a": {
+                case ADD: {
                     String wineName = (String) inStream.readObject();
                     ImageIcon label = (ImageIcon) inStream.readObject();
                     try {
                         add(wineName, label);
-                        outStream.writeObject("Ok");
+                        outStream.writeObject(Opcode.OK);
                         outStream.writeObject("Wine '" + wineName + "' successfully added.");
                     } catch (Exception e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Wine already exists");
                     }
                     break;
                 }
-                case "sell":
-                case "s": {
+                case SELL: {
                     String wineName = (String) inStream.readObject();
                     double value = (Double) inStream.readObject();
                     int quantity = (Integer) inStream.readObject();
                     try {
                         sell(wineName, clientId, value, quantity);
-                        outStream.writeObject("Ok");
+                        outStream.writeObject(Opcode.OK);
                         outStream.writeObject("Wine '" + wineName + "' successfully added to the market.");
                     } catch (NoSuchElementException e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
                     } catch (DuplicateElementException e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("You are already selling wine '" + wineName + "'.");
                     }
                     break;
                 }
-                case "view":
-                case "v": {
+                case VIEW: {
                     String wineName = (String) inStream.readObject();
                     try {
                         String s = view(wineName);
-                        outStream.writeObject("Ok");
+                        outStream.writeObject(Opcode.OK);
                         outStream.writeObject(s);
                     } catch (Exception e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
                     }
                     break;
                 }
-                case "buy":
-                case "b": {
+                case BUY: {
                     String wineName = (String) inStream.readObject();
                     String sellerId = (String) inStream.readObject();
                     int quantity = (Integer) inStream.readObject();
                     try {
                         buy(clientId, wineName, sellerId, quantity);
-                        outStream.writeObject("Ok");
+                        outStream.writeObject(Opcode.OK);
                         outStream.writeObject("Wine '" + wineName + "' bought successfully.");
                     } catch (NoSuchElementException e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
                     } catch (IllegalArgumentException e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject(e.getMessage()); // exception message contains more details
                     }
                     break;
                 }
-                case "wallet":
-                case "w": {
+                case WALLET: {
                     double d = wallet(clientId);
-                    outStream.writeObject("Ok");
+                    outStream.writeObject(Opcode.OK);
                     outStream.writeObject("Your balance is " + d + "$.");
                     break;
                 }
-                case "classify":
-                case "c": {
+                case CLASSIFY: {
                     String wineName = (String) inStream.readObject();
                     int stars = (Integer) inStream.readObject();
                     try {
                         classify(wineName, stars);
-                        outStream.writeObject("Ok");
+                        outStream.writeObject(Opcode.OK);
                         outStream.writeObject("Classification added successfully.");
                     } catch (Exception e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
                     }
                     break;
                 }
-                case "talk":
-                case "t": {
+                case TALK: {
                     String recipientId = (String) inStream.readObject();
                     String message = (String) inStream.readObject();
                     try {
                         talk(recipientId, message, clientId);
-                        outStream.writeObject("Ok");
+                        outStream.writeObject(Opcode.OK);
                         outStream.writeObject("Message sent successfully.");
                     } catch (Exception e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("User '" + recipientId + "' does not exist.");
                     }
                     break;
                 }
-                case "read":
-                case "r": {
+                case READ: {
                     try {
                         Message m = read(clientId);
-                        outStream.writeObject("Ok");
+                        outStream.writeObject(Opcode.OK);
                         outStream.writeObject(m.toString());
                     } catch (Exception e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("No messages to read.");
                     }
                     break;
                 }
-                case "exit":
-                case "quit":
-                case "stop": {
+                case EXIT: {
                     isExiting = true;
                     break;
                 }
@@ -273,7 +263,7 @@ public class TintolmarketServer {
                 }
                 outStream.writeObject(isAuthenticated);
                 if (isAuthenticated) {
-                    interactionLoop(outStream, inStream, clientId); // TODO
+                    interactionLoop(outStream, inStream, clientId);
                 } else {
                     System.out.println("Authentication failed for user '" + clientId + "'.");
                 }
