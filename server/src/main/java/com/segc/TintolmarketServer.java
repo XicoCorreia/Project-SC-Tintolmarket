@@ -110,7 +110,7 @@ public class TintolmarketServer {
         }
     }
 
-    public void sell(String wine, int value, int quantity, User user) {
+    public void sell(String wine, double value, int quantity, User user) {
         if (this.wines.containsKey(wine)) {
             this.winesSale.put(wine, new WineSale(this.wines.get(wine), user, value, quantity));
         } else {
@@ -133,8 +133,7 @@ public class TintolmarketServer {
         throw new NoSuchElementException();
     }
 
-    public void buy(String wine, String seller, int quantity, String buyer) {
-        User b = this.users.get(buyer);
+    public void buy(String wine, String seller, int quantity, User buyer) {
         User s = this.users.get(seller);
         if (!this.winesSale.containsKey(wine)) {
             throw new NoSuchElementException();
@@ -143,16 +142,16 @@ public class TintolmarketServer {
         double total = wineSale.getValue() * quantity;
         if (wineSale.getQuantity() < quantity) {
             throw new IllegalArgumentException(INVALID_QUANTITY_EXCEPTION_MESSAGE);
-        } else if (total > b.getBalance()) {
+        } else if (total > buyer.getBalance()) {
             throw new IllegalArgumentException(INSUFFICIENT_BALANCE_EXCEPTION_MESSAGE);
         }
         wineSale.removeQuantity(quantity);
         s.addBalance(total);
-        b.removeBalance(total);
+        buyer.removeBalance(total);
     }
 
-    public double wallet(String clientId) {
-        return this.users.get(clientId).getBalance();
+    public double wallet(User client) {
+        return client.getBalance();
     }
 
     public void classify(String wine, int stars) {
@@ -171,13 +170,64 @@ public class TintolmarketServer {
         throw new NoSuchElementException();
     }
 
-    public Message read(String clientId) {
-        return users.get(clientId).readMessage();
+    public Message read(User client) {
+        return client.readMessage();
     }
 
-    private void interactionLoop() {
+    private void interactionLoop(ObjectOutputStream outStream, ObjectInputStream inStream, User user) throws ClassNotFoundException, IOException{
         while (true) {
-            // TODO: faz cenas
+            String command = (String) inStream.readObject();
+            String wine;
+            int quantity;
+            switch (command) {
+            case "add":
+            case "a":
+                wine = (String) inStream.readObject();
+                //TODO Path?File?
+            	//add(wine, File);
+                break;
+            case "sell":
+            case "s":
+                wine = (String) inStream.readObject();
+                double value = (Double) inStream.readObject();
+                quantity = (Integer) inStream.readObject();
+                sell(wine, value, quantity, user);
+                break;
+            case "view":
+            case "v":
+                wine = (String) inStream.readObject();
+                view(wine);
+                break;
+            case "buy":
+            case "b":
+            	wine = (String) inStream.readObject();
+                String seller = (String) inStream.readObject();
+                quantity = (Integer) inStream.readObject();
+                buy(wine, seller, quantity, user);
+                break;
+            case "wallet":
+            case "w":
+                wallet(user);
+                break;
+            case "classify":
+            case "c":
+                wine = (String) inStream.readObject();
+                int stars = (Integer) inStream.readObject();
+                classify(wine, stars);
+                break;
+            case "talk":
+            case "t":
+                String recipient = (String) inStream.readObject();
+                String message = (String) inStream.readObject();
+            	talk(recipient, message, user.getID());
+                break;
+            case "read":
+            case "r":
+            	read(user);
+                break;
+            default:
+                throw new IllegalArgumentException("Unexpected command: " + command);
+        }
         }
     }
 
@@ -219,14 +269,14 @@ public class TintolmarketServer {
                 }
                 outStream.writeObject(isAuthenticated);
                 if (isAuthenticated) {
-                    // interactionLoop(); // TODO
+                    interactionLoop(outStream, inStream, sessionUser); // TODO
                 } else {
                     System.out.println("Authentication failed for user '" + clientId + "'.");
                 }
                 socket.shutdownOutput();
                 socket.close();
 
-            } catch (IOException e) {
+            } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }
