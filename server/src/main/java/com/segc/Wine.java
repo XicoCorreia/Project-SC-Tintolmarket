@@ -8,6 +8,8 @@ import java.awt.*;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 /**
  * @author fc54685 Francisco Correia
@@ -105,6 +107,10 @@ public class Wine implements Serializable {
      */
     public void addRating(int stars) {
         this.ratings.add(stars);
+    }
+
+    public WineListing getListing(String sellerId) throws NoSuchElementException {
+        return Optional.of(wineListings.get(sellerId)).orElseThrow();
     }
 
     public HashMap<String, WineListing> getListings() {

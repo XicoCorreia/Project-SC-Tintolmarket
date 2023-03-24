@@ -19,16 +19,20 @@ import java.util.stream.Collectors;
 public class TintolmarketServer {
     private static final int DEFAULT_PORT = 12345;
     private final int port;
-    private Map<String, User> users = new HashMap<>();
+    private final UserCatalog userCatalog;
     private final WineCatalog wineCatalog;
 
     public TintolmarketServer(int port) {
-        this(port, Configuration.getInstance().getValue("userCredentials"), new WineCatalog());
+        this(port, Configuration.getInstance().getValue("userCredentials"), new WineCatalog(), new UserCatalog());
     }
 
-    public TintolmarketServer(int port, String userCredentialsFilename, WineCatalog wineCatalog) {
+    public TintolmarketServer(int port,
+                              String userCredentialsFilename,
+                              WineCatalog wineCatalog,
+                              UserCatalog userCatalog) {
         this.port = port;
         this.wineCatalog = wineCatalog;
+        this.userCatalog = userCatalog;
         File f = new File(userCredentialsFilename);
         try {
             if (f.getParentFile().mkdirs() || f.createNewFile()) {
@@ -78,46 +82,26 @@ public class TintolmarketServer {
         }
     }
 
-    public void sell(String wine, int value, int quantity, User user) {
-        if (this.wines.containsKey(wine)) {
-            this.winesSale.put(wine, new WineListing(user.getId(), value, quantity));
-        } else {
-            throw new NoSuchElementException();
-        }
+    public void sell(String wineName, String sellerId, int value, int quantity) {
+        wineCatalog.sell(wineName, sellerId, value, quantity);
     }
 
-    public void buy(String wine, String seller, int quantity, String buyer) {
-        User b = this.users.get(buyer);
-        User s = this.users.get(seller);
-        if (!this.winesSale.containsKey(wine)) {
-            throw new NoSuchElementException();
-        }
-        WineListing wineListing = this.winesSale.get(wine);
-        double total = wineListing.getCostPerUnit() * quantity;
-        if (wineListing.getQuantity() < quantity) {
-            throw new IllegalArgumentException(INVALID_QUANTITY_EXCEPTION_MESSAGE);
-        } else if (total > b.getBalance()) {
-            throw new IllegalArgumentException(INSUFFICIENT_BALANCE_EXCEPTION_MESSAGE);
-        }
-        wineListing.removeQuantity(quantity);
-        s.addBalance(total);
-        b.removeBalance(total);
+    public void buy(String buyerId, String wineName, String sellerId, int quantity) {
+        double price = wineCatalog.getPrice(wineName, sellerId, quantity);
+        wineCatalog.buy(wineName, sellerId, quantity);
+        userCatalog.removeBalance(buyerId, price);
     }
 
     public double wallet(String clientId) {
-        return this.users.get(clientId).getBalance();
+        return userCatalog.getBalance(clientId);
     }
 
     public void talk(String recipient, String message, String sender) {
-        if (users.containsKey(recipient)) {
-            users.get(recipient).addMessage(new Message(sender, message));
-            return;
-        }
-        throw new NoSuchElementException();
+        userCatalog.talk(sender, recipient, message);
     }
 
     public Message read(String clientId) {
-        return users.get(clientId).readMessage();
+        return userCatalog.read(clientId);
     }
 
     private void interactionLoop() {
@@ -148,19 +132,14 @@ public class TintolmarketServer {
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(e);
                 }
-                boolean isAuthenticated = false;
-                sessionUser = users.get(clientId);
-                if (sessionUser == null) {
-                    sessionUser = new User(clientId);
-                    users.put(clientId, sessionUser);
-                    try {
-                        AuthenticationService.getInstance().registerUser(clientId, password);
-                        isAuthenticated = true;
-                    } catch (DuplicateElementException e) {
-                        System.out.printf("Unable to register user '%s': user already exists.%n", clientId);
-                    }
-                } else {
+                boolean isAuthenticated;
+                try {
+                    userCatalog.add(clientId);
+                    AuthenticationService.getInstance().registerUser(clientId, password);
                     isAuthenticated = AuthenticationService.getInstance().authenticateUser(clientId, password);
+                } catch (DuplicateElementException e) {
+                    System.out.printf("Unable to register user '%s': user already exists.%n", clientId);
+                    isAuthenticated = false;
                 }
                 outStream.writeObject(isAuthenticated);
                 if (isAuthenticated) {

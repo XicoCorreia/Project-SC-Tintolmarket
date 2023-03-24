@@ -62,22 +62,32 @@ public class User implements Serializable {
     /**
      * @param balance The balance to add to this client's balance.
      */
-    public void addBalance(double balance) {
+    public double addBalance(double balance) {
         this.balance += balance;
+        return this.balance;
     }
 
     /**
      * @param balance The balance to remove from this client's balance.
      */
-    public void removeBalance(double balance) {
+    public double removeBalance(double balance) {
         this.balance -= balance;
+        return this.balance;
     }
 
     /**
-     * @param message The message to add to this client's messages.
+     * @param message The {@link Message} to add to this client's messages.
      */
     public void addMessage(Message message) {
         messages.add(message);
+    }
+
+    /**
+     * @param senderId The id of the sender ({@link User}) of the message.
+     * @param message  The content of the message to add to this client's messages.
+     */
+    public void addMessage(String senderId, String message) {
+        messages.add(new Message(senderId, message));
     }
 
     /**
