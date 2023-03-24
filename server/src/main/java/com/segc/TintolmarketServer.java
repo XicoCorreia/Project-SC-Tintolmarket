@@ -9,6 +9,7 @@ import javax.swing.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.NoSuchElementException;
 
 /**
  * @author fc54685 Francisco Correia
@@ -116,46 +117,96 @@ public class TintolmarketServer {
                 case "a":
                     wineName = (String) inStream.readObject();
                     ImageIcon label = (ImageIcon) inStream.readObject();
-                    add(wineName, label);
+                    try {
+                        add(wineName, label);
+                        outStream.writeObject("Ok");
+                    } catch (Exception e) {
+                        outStream.writeObject("Error");
+                        outStream.writeObject("Wine already exists");
+                    }
                     break;
                 case "sell":
                 case "s":
                     wineName = (String) inStream.readObject();
                     double value = (Double) inStream.readObject();
                     int quantity = (Integer) inStream.readObject();
-                    sell(wineName, clientId, value, quantity);
+                    try {
+                        sell(wineName, clientId, value, quantity);
+                        outStream.writeObject("Ok");
+                    } catch (NoSuchElementException e) {
+                        outStream.writeObject("Error");
+                        outStream.writeObject("Wine '" + wineName + "' does not exist.");
+                    } catch (DuplicateElementException e) {
+                        outStream.writeObject("Error");
+                        outStream.writeObject("You are already selling wine '" + wineName + "'.");
+                    }
                     break;
                 case "view":
                 case "v":
                     wineName = (String) inStream.readObject();
-                    view(wineName);
+                    try {
+                        String s = view(wineName);
+                        outStream.writeObject(s);
+                    } catch (Exception e) {
+                        outStream.writeObject("Error");
+                        outStream.writeObject("Wine '" + wineName + "' does not exist.");
+                    }
                     break;
                 case "buy":
                 case "b":
                     wineName = (String) inStream.readObject();
                     String sellerId = (String) inStream.readObject();
                     quantity = (Integer) inStream.readObject();
-                    buy(clientId, wineName, sellerId, quantity);
+                    try {
+                        buy(clientId, wineName, sellerId, quantity);
+                        outStream.writeObject("Ok");
+                    } catch (NoSuchElementException e) {
+                        outStream.writeObject("Error");
+                        outStream.writeObject("Wine '" + wineName + "' does not exist.");
+                    } catch (IllegalArgumentException e) {
+                        //TODO - pode ser unidades insuficientes ou saldo insuficiente - msgs diferents
+                        outStream.writeObject("Error");
+                        outStream.writeObject(e.getMessage());
+                    }
                     break;
                 case "wallet":
                 case "w":
-                    wallet(clientId);
+                    double d = wallet(clientId);
+                    outStream.writeObject("Your balance is " + d + "$.");
                     break;
                 case "classify":
                 case "c":
                     wineName = (String) inStream.readObject();
                     int stars = (Integer) inStream.readObject();
-                    classify(wineName, stars);
+                    try {
+                        classify(wineName, stars);
+                        outStream.writeObject("Ok");
+                    } catch (Exception e) {
+                        outStream.writeObject("Error");
+                        outStream.writeObject("Wine '" + wineName + "' does not exist.");
+                    }
                     break;
                 case "talk":
                 case "t":
                     String recipientId = (String) inStream.readObject();
                     String message = (String) inStream.readObject();
-                    talk(recipientId, message, clientId);
+                    try {
+                        talk(recipientId, message, clientId);
+                        outStream.writeObject("Ok");
+                    } catch (Exception e) {
+                        outStream.writeObject("Error");
+                        outStream.writeObject("User '" + recipientId + "' does not exist.");
+                    }
                     break;
                 case "read":
                 case "r":
-                    read(clientId);
+                    try {
+                        Message m = read(clientId);
+                        outStream.writeObject(m.toString());
+                    } catch (Exception e) {
+                        outStream.writeObject("Error");
+                        outStream.writeObject("No messages to read.");
+                    }
                     break;
                 case "exit":
                 case "quit":
