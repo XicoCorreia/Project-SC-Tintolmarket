@@ -35,7 +35,8 @@ public class Tintolmarket {
             "- wallet\n" +
             "- classify <wine> <stars>\n" +
             "- talk <user> <message>\n" +
-            "- read\n";
+            "- read\n" +
+            "- quit\n";
 
 
     public static void main(String[] args) {
@@ -67,7 +68,6 @@ public class Tintolmarket {
             	System.out.println("Enter your password: ");
             	pass = sc.next();
             }
-            
             outStream.writeObject(user);
             outStream.writeObject(pass);
             boolean isAuthenticated = (Boolean) inStream.readObject();
