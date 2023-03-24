@@ -57,8 +57,8 @@ public class Tintolmarket {
 
     public static void main(String[] args) {
         if (args.length < 2) {
-            System.out.println("Badly formed Server start.\n" +
-                    "Use: java -jar Tintolmarket.jar <serverAddress> <userID> [password]");
+            System.out.printf("Invalid arguments.%n" +
+                    "Use: java -jar Tintolmarket.jar <serverAddress> <clientId> [password]%n");
             System.exit(1);
         }
 
@@ -99,6 +99,11 @@ public class Tintolmarket {
                 String command = sc.nextLine();
                 String[] c = command.split(" ");
                 Opcode opcode = opcodes.getOrDefault(c[0].toLowerCase(), Opcode.INVALID);
+                if (opcode == Opcode.INVALID) {
+                    System.out.println("Unexpected command: " + c[0]);
+                    continue;
+                }
+                outStream.writeObject(opcode);
                 switch (opcode) {
                     case ADD: {
                         add(outStream, c, sc);
@@ -116,10 +121,6 @@ public class Tintolmarket {
                         buy(outStream, c);
                         break;
                     }
-                    case WALLET: {
-                        wallet(outStream, c);
-                        break;
-                    }
                     case CLASSIFY: {
                         classify(outStream, c);
                         break;
@@ -128,18 +129,24 @@ public class Tintolmarket {
                         talk(outStream, c);
                         break;
                     }
-                    case READ: {
-                        read(outStream, c);
-                        break;
-                    }
                     case EXIT: {
                         isExiting = true;
                         break;
                     }
-                    case INVALID:
-                    default: {
-                        throw new IllegalArgumentException("Unexpected command: " + command);
+                    case WALLET:
+                    case READ: {
+                        break;
                     }
+                    default: {
+                        throw new RuntimeException();
+                    }
+                }
+                Opcode status = (Opcode) inStream.readObject();
+                String response = (String) inStream.readObject();
+                if (status == Opcode.ERROR) {
+                    System.err.println(response);
+                } else {
+                    System.out.println(response);
                 }
             }
             sc.close();
@@ -154,7 +161,6 @@ public class Tintolmarket {
         if (command.length != 3) {
             System.out.println("Error in the command");
         }
-        outStream.writeObject(command[0]);
         outStream.writeObject(command[1]);
         Path path = Paths.get(command[2]);
 
@@ -171,7 +177,6 @@ public class Tintolmarket {
         if (command.length != 4) {
             System.out.println("Error in the command");
         }
-        outStream.writeObject(command[0]);
         outStream.writeObject(command[1]);
         outStream.writeObject(command[2]);
         outStream.writeObject(command[3]);
@@ -181,7 +186,6 @@ public class Tintolmarket {
         if (command.length != 2) {
             System.out.println("Error in the command");
         }
-        outStream.writeObject(command[0]);
         outStream.writeObject(command[1]);
     }
 
@@ -190,24 +194,15 @@ public class Tintolmarket {
         if (command.length != 4) {
             System.out.println("Error in the command");
         }
-        outStream.writeObject(command[0]);
         outStream.writeObject(command[1]);
         outStream.writeObject(command[2]);
         outStream.writeObject(command[3]);
-    }
-
-    private static void wallet(ObjectOutputStream outStream, String[] command) throws IOException {
-        if (command.length != 1) {
-            System.out.println("Error in the command");
-        }
-        outStream.writeObject(command[0]);
     }
 
     private static void classify(ObjectOutputStream outStream, String[] command) throws IOException {
         if (command.length != 3) {
             System.out.println("Error in the command");
         }
-        outStream.writeObject(command[0]);
         outStream.writeObject(command[1]);
         outStream.writeObject(command[2]);
     }
@@ -216,15 +211,7 @@ public class Tintolmarket {
         if (command.length != 3) {
             System.out.println("Error in the command");
         }
-        outStream.writeObject(command[0]);
         outStream.writeObject(command[1]);
         outStream.writeObject(command[2]);
-    }
-
-    private static void read(ObjectOutputStream outStream, String[] command) throws IOException {
-        if (command.length != 1) {
-            System.out.println("Error in the command");
-        }
-        outStream.writeObject(command[0]);
     }
 }
