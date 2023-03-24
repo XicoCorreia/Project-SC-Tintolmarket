@@ -69,8 +69,7 @@ public class TintolmarketServer {
 
             }
         } catch (IOException e) {
-            System.err.println(e.getMessage());
-            System.exit(-1);
+            throw new RuntimeException(e);
         }
     }
 
@@ -112,12 +111,11 @@ public class TintolmarketServer {
             throws ClassNotFoundException, IOException {
         boolean isExiting = false;
         while (!isExiting) {
-            String command = (String) inStream.readObject();
-            String wineName;
+            String command = ((String) inStream.readObject()).toLowerCase();
             switch (command) {
                 case "add":
-                case "a":
-                    wineName = (String) inStream.readObject();
+                case "a": {
+                    String wineName = (String) inStream.readObject();
                     ImageIcon label = (ImageIcon) inStream.readObject();
                     try {
                         add(wineName, label);
@@ -128,9 +126,10 @@ public class TintolmarketServer {
                         outStream.writeObject("Wine already exists");
                     }
                     break;
+                }
                 case "sell":
-                case "s":
-                    wineName = (String) inStream.readObject();
+                case "s": {
+                    String wineName = (String) inStream.readObject();
                     double value = (Double) inStream.readObject();
                     int quantity = (Integer) inStream.readObject();
                     try {
@@ -145,9 +144,10 @@ public class TintolmarketServer {
                         outStream.writeObject("You are already selling wine '" + wineName + "'.");
                     }
                     break;
+                }
                 case "view":
-                case "v":
-                    wineName = (String) inStream.readObject();
+                case "v": {
+                    String wineName = (String) inStream.readObject();
                     try {
                         String s = view(wineName);
                         outStream.writeObject("Ok");
@@ -157,11 +157,12 @@ public class TintolmarketServer {
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
                     }
                     break;
+                }
                 case "buy":
-                case "b":
-                    wineName = (String) inStream.readObject();
+                case "b": {
+                    String wineName = (String) inStream.readObject();
                     String sellerId = (String) inStream.readObject();
-                    quantity = (Integer) inStream.readObject();
+                    int quantity = (Integer) inStream.readObject();
                     try {
                         buy(clientId, wineName, sellerId, quantity);
                         outStream.writeObject("Ok");
@@ -175,15 +176,17 @@ public class TintolmarketServer {
                         outStream.writeObject(e.getMessage());
                     }
                     break;
+                }
                 case "wallet":
-                case "w":
+                case "w": {
                     double d = wallet(clientId);
                     outStream.writeObject("Ok");
                     outStream.writeObject("Your balance is " + d + "$.");
                     break;
+                }
                 case "classify":
-                case "c":
-                    wineName = (String) inStream.readObject();
+                case "c": {
+                    String wineName = (String) inStream.readObject();
                     int stars = (Integer) inStream.readObject();
                     try {
                         classify(wineName, stars);
@@ -194,8 +197,9 @@ public class TintolmarketServer {
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
                     }
                     break;
+                }
                 case "talk":
-                case "t":
+                case "t": {
                     String recipientId = (String) inStream.readObject();
                     String message = (String) inStream.readObject();
                     try {
@@ -207,8 +211,9 @@ public class TintolmarketServer {
                         outStream.writeObject("User '" + recipientId + "' does not exist.");
                     }
                     break;
+                }
                 case "read":
-                case "r":
+                case "r": {
                     try {
                         Message m = read(clientId);
                         outStream.writeObject("Ok");
@@ -218,13 +223,16 @@ public class TintolmarketServer {
                         outStream.writeObject("No messages to read.");
                     }
                     break;
+                }
                 case "exit":
                 case "quit":
-                case "stop":
+                case "stop": {
                     isExiting = true;
                     break;
-                default:
+                }
+                default: {
                     throw new IllegalArgumentException("Unexpected command: " + command);
+                }
             }
         }
     }
