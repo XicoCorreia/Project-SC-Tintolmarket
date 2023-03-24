@@ -102,7 +102,8 @@ public class TintolmarketServer {
 
     private void interactionLoop(ObjectOutputStream outStream, ObjectInputStream inStream, String clientId)
             throws ClassNotFoundException, IOException {
-        while (true) {
+        boolean isExiting = false;
+        while (!isExiting) {
             String command = (String) inStream.readObject();
             String wineName;
             switch (command) {
@@ -150,6 +151,11 @@ public class TintolmarketServer {
                 case "read":
                 case "r":
                     read(clientId);
+                    break;
+                case "exit":
+                case "quit":
+                case "stop":
+                    isExiting = true;
                     break;
                 default:
                     throw new IllegalArgumentException("Unexpected command: " + command);
