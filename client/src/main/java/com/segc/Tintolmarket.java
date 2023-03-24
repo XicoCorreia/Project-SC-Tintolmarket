@@ -11,7 +11,12 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Scanner;
+
+import javax.swing.ImageIcon;
 
 /**
  * @author fc54685 Francisco Correia
@@ -55,6 +60,14 @@ public class Tintolmarket {
         try (Socket socket = new Socket(host, port);
              ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream())) {
+        	
+            Scanner sc = new Scanner(System.in);
+            
+            if(pass == null) {
+            	System.out.println("Enter your password: ");
+            	pass = sc.next();
+            }
+            
             outStream.writeObject(user);
             outStream.writeObject(pass);
             boolean isAuthenticated = (Boolean) inStream.readObject();
@@ -64,16 +77,15 @@ public class Tintolmarket {
             }
 
             System.out.print("Authenticated.\n" + COMMANDS);
-
-            Scanner sc = new Scanner(System.in);
-
-            while (sc.hasNext()) {
+            boolean isExiting = false;
+            
+            while (!isExiting && sc.hasNext()) {
                 String command = sc.nextLine();
                 String[] c = command.split(" ");
                 switch (c[0]) {
                     case "add":
                     case "a":
-                        add(outStream, c);
+                        add(outStream, c, sc);
                         break;
                     case "sell":
                     case "s":
@@ -103,6 +115,9 @@ public class Tintolmarket {
                     case "r":
                         read(outStream, c);
                         break;
+                    case "quit":  
+                    	isExiting = true;
+                    break;		
                     default:
                         throw new IllegalArgumentException("Unexpected command: " + command);
                 }
@@ -115,13 +130,21 @@ public class Tintolmarket {
 
     }
 
-    private static void add(ObjectOutputStream outStream, String[] command) throws IOException {
+    private static void add(ObjectOutputStream outStream, String[] command, Scanner sc) throws IOException {
         if (command.length != 3) {
             System.out.println("Error in the command");
         }
         outStream.writeObject(command[0]);
         outStream.writeObject(command[1]);
-        uploadFile(new File(command[2]), outStream);
+        Path path = Paths.get(command[2]);
+        
+	    while(!Files.exists(path)) {
+	    	System.out.println("Enter the path to the wine image: ");
+	    	path = Paths.get(sc.next());
+	    }
+        ImageIcon image = new ImageIcon(command[2]);
+        outStream.writeObject(image);
+
     }
 
     private static void sell(ObjectOutputStream outStream, String[] command) throws IOException {
@@ -183,18 +206,5 @@ public class Tintolmarket {
             System.out.println("Error in the command");
         }
         outStream.writeObject(command[0]);
-    }
-
-    private static void uploadFile(File file, ObjectOutputStream out) throws IOException {
-        try (FileInputStream fin = new FileInputStream(file); InputStream fileStream = new BufferedInputStream(fin)) {
-            long fileSize = file.length();
-            out.writeObject(fileSize);
-            byte[] buffer = new byte[1024];
-            int bytesRead;
-            while ((bytesRead = fileStream.read(buffer)) > 0) {
-                out.write(buffer, 0, bytesRead);
-            }
-            out.flush();
-        }
     }
 }
