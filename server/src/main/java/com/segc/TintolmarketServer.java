@@ -120,6 +120,7 @@ public class TintolmarketServer {
                     try {
                         add(wineName, label);
                         outStream.writeObject("Ok");
+                        outStream.writeObject("Wine '" + wineName + "' successfully added.");
                     } catch (Exception e) {
                         outStream.writeObject("Error");
                         outStream.writeObject("Wine already exists");
@@ -133,6 +134,7 @@ public class TintolmarketServer {
                     try {
                         sell(wineName, clientId, value, quantity);
                         outStream.writeObject("Ok");
+                        outStream.writeObject("Wine '" + wineName + "' successfully added to the market.");
                     } catch (NoSuchElementException e) {
                         outStream.writeObject("Error");
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
@@ -146,6 +148,7 @@ public class TintolmarketServer {
                     wineName = (String) inStream.readObject();
                     try {
                         String s = view(wineName);
+                        outStream.writeObject("Ok");
                         outStream.writeObject(s);
                     } catch (Exception e) {
                         outStream.writeObject("Error");
@@ -160,6 +163,7 @@ public class TintolmarketServer {
                     try {
                         buy(clientId, wineName, sellerId, quantity);
                         outStream.writeObject("Ok");
+                        outStream.writeObject("Wine '" + wineName + "' bought successfully.");
                     } catch (NoSuchElementException e) {
                         outStream.writeObject("Error");
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
@@ -172,6 +176,7 @@ public class TintolmarketServer {
                 case "wallet":
                 case "w":
                     double d = wallet(clientId);
+                    outStream.writeObject("Ok");
                     outStream.writeObject("Your balance is " + d + "$.");
                     break;
                 case "classify":
@@ -181,6 +186,7 @@ public class TintolmarketServer {
                     try {
                         classify(wineName, stars);
                         outStream.writeObject("Ok");
+                        outStream.writeObject("Classification added successfully.");
                     } catch (Exception e) {
                         outStream.writeObject("Error");
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
@@ -193,6 +199,7 @@ public class TintolmarketServer {
                     try {
                         talk(recipientId, message, clientId);
                         outStream.writeObject("Ok");
+                        outStream.writeObject("Message sent successfully.");
                     } catch (Exception e) {
                         outStream.writeObject("Error");
                         outStream.writeObject("User '" + recipientId + "' does not exist.");
@@ -202,6 +209,7 @@ public class TintolmarketServer {
                 case "r":
                     try {
                         Message m = read(clientId);
+                        outStream.writeObject("Ok");
                         outStream.writeObject(m.toString());
                     } catch (Exception e) {
                         outStream.writeObject("Error");
