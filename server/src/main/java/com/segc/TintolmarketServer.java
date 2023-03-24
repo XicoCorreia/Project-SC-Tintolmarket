@@ -82,9 +82,13 @@ public class TintolmarketServer {
     }
 
     public void buy(String buyerId, String wineName, String sellerId, int quantity) {
-        double price = wineCatalog.getPrice(wineName, sellerId, quantity);
-        wineCatalog.buy(wineName, sellerId, quantity);
-        userCatalog.removeBalance(buyerId, price);
+        double balance = userCatalog.getBalance(buyerId);
+        if (balance < wineCatalog.getPrice(wineName, sellerId, quantity)) {
+            String msg = String.format("Buyer '%s' has insufficient funds to make this purchase.", buyerId);
+            throw new IllegalArgumentException(msg);
+        }
+        double price = wineCatalog.buy(wineName, sellerId, quantity);
+        userCatalog.transferBalance(buyerId, sellerId, price);
     }
 
     public double wallet(String clientId) {

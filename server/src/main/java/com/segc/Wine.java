@@ -123,4 +123,8 @@ public class Wine implements Serializable {
         wineListings.values().forEach(sb::append);
         return sb.toString();
     }
+
+    public void removeListing(String sellerId) {
+        this.wineListings.remove(sellerId);
+    }
 }

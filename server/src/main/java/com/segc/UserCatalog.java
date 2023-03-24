@@ -38,19 +38,28 @@ public class UserCatalog {
         return Optional.ofNullable(users.get(clientId)).orElseThrow().getBalance();
     }
 
-    public double addBalance(String clientId, double balance) throws NoSuchElementException, IllegalArgumentException {
+    public void addBalance(String clientId, double balance) throws NoSuchElementException, IllegalArgumentException {
         User user = Optional.ofNullable(users.get(clientId)).orElseThrow();
-        double newBalance = user.addBalance(balance);
+        user.addBalance(balance);
         dps.putObject(user, Path.of(userDataDir, user.getId()));
-        return newBalance;
     }
 
-    public double removeBalance(String clientId, double balance)
+    public void removeBalance(String clientId, double balance)
             throws NoSuchElementException, IllegalArgumentException {
         User user = Optional.ofNullable(users.get(clientId)).orElseThrow();
-        double newBalance = user.removeBalance(balance);
+        user.removeBalance(balance);
         dps.putObject(user, Path.of(userDataDir, clientId));
-        return newBalance;
+    }
+
+    public void transferBalance(String senderId, String recipientId, double amount) {
+        // BOTH conditions must be true before we transfer the balance
+        if (users.containsKey(senderId) && users.containsKey(recipientId)) {
+            removeBalance(senderId, amount);
+            addBalance(recipientId, amount);
+        } else {
+            throw new NoSuchElementException();
+        }
+
     }
 
     public void talk(String senderId, String recipientId, String message) throws NoSuchElementException {

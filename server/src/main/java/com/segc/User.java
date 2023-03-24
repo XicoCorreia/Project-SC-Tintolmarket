@@ -62,17 +62,21 @@ public class User implements Serializable {
     /**
      * @param balance The balance to add to this client's balance.
      */
-    public double addBalance(double balance) {
+    public void addBalance(double balance) throws IllegalArgumentException {
+        if (balance < 0) {
+            throw new IllegalArgumentException("Balance amount must be a positive integer.");
+        }
         this.balance += balance;
-        return this.balance;
     }
 
     /**
      * @param balance The balance to remove from this client's balance.
      */
-    public double removeBalance(double balance) {
+    public void removeBalance(double balance) {
+        if (balance < 0) {
+            throw new IllegalArgumentException("Balance amount must be a positive integer.");
+        }
         this.balance -= balance;
-        return this.balance;
     }
 
     /**

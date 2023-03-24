@@ -13,13 +13,13 @@ import java.io.Serializable;
 public class WineListing implements Serializable {
     private static final long serialVersionUID = -224700426049399779L;
     private final String sellerId;
-    private final double costPerUnit;
+    private double costPerUnit;
     private int quantity;
 
     public WineListing(String sellerId, double costPerUnit, int quantity) {
         this.sellerId = sellerId;
-        this.costPerUnit = costPerUnit;
-        this.quantity = quantity;
+        setCostPerUnit(costPerUnit);
+        addQuantity(quantity);
     }
 
     /**
@@ -32,22 +32,25 @@ public class WineListing implements Serializable {
     /**
      * @param quantity The quantity to add to this {@link WineListing}.
      */
-    public void addQuantity(int quantity) {
+    public void addQuantity(int quantity) throws IllegalArgumentException {
+        if (quantity < 0) {
+            throw new IllegalArgumentException("Quantity must be a positive integer.");
+        }
         this.quantity += quantity;
     }
 
     /**
      * @param quantity The quantity to remove from this {@link WineListing}.
      */
-    public void removeQuantity(int quantity) {
-        this.quantity -= quantity;
-    }
-
-    /**
-     * @return The clientId of the seller ({@link User}) of this {@link WineListing}.
-     */
-    public String getSellerId() {
-        return this.sellerId;
+    public void removeQuantity(int quantity) throws IllegalArgumentException {
+        if (quantity < 0) {
+            throw new IllegalArgumentException("Quantity must be a positive integer.");
+        }
+        if (quantity > this.quantity) {
+            String msg = String.format("Requested qty. (%d) exceeds available qty. (%d).", quantity, this.quantity);
+            throw new IllegalArgumentException(msg);
+        }
+        this.quantity += quantity;
     }
 
     /**
@@ -55,6 +58,13 @@ public class WineListing implements Serializable {
      */
     public double getCostPerUnit() {
         return this.costPerUnit;
+    }
+
+    public void setCostPerUnit(double costPerUnit) throws IllegalArgumentException {
+        if (costPerUnit < 0) {
+            throw new IllegalArgumentException("Cost per unit must be a positive integer.");
+        }
+        this.costPerUnit = costPerUnit;
     }
 
     @Override

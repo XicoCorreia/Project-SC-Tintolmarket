@@ -37,12 +37,9 @@ public class WineCatalog {
 
     public void sell(String wineName, String sellerId, double costPerUnit, int quantity)
             throws DuplicateElementException, NoSuchElementException, IllegalArgumentException {
-        Wine wine = wines.get(wineName);
-        if (wine == null) {
-            throw new NoSuchElementException();
-        }
-        WineListing wineListing = new WineListing(sellerId, costPerUnit, quantity);
-        if (wine.getListings().putIfAbsent(sellerId, wineListing) == null) {
+        Wine wine = Optional.ofNullable(wines.get(wineName)).orElseThrow();
+        WineListing wl = new WineListing(sellerId, costPerUnit, quantity);
+        if (wine.getListings().putIfAbsent(sellerId, wl) == null) {
             dps.putObject(wine, Path.of(wineDataDir, wine.getName()));
         } else {
             throw new DuplicateElementException();
@@ -57,7 +54,10 @@ public class WineCatalog {
             throws NoSuchElementException, IllegalArgumentException {
         Wine wine = Optional.ofNullable(wines.get(wineName)).orElseThrow();
         WineListing wl = Optional.ofNullable(wine.getListings().get(sellerId)).orElseThrow();
-        wl.removeQuantity(quantity); // TODO: boolean if (quantity == wl.getQuantity()), apagar este WineListing
+        wl.removeQuantity(quantity);
+        if (wl.getQuantity() == 0) {
+            wine.removeListing(sellerId);
+        }
         dps.putObject(wine, Path.of(wineDataDir, wine.getName()));
         return wl.getCostPerUnit() * quantity;
     }
@@ -65,14 +65,8 @@ public class WineCatalog {
     public double getPrice(String wineName, String sellerId, int quantity)
             throws NoSuchElementException, IllegalArgumentException {
         WineListing wl = Optional.ofNullable(wines.get(wineName)).orElseThrow().getListing(sellerId);
-        if (wl.getQuantity() < quantity) {
-            String msg = String.format(
-                    "Requested quantity %d exceeds available quantity %d for wine '%s' sold by '%s'.%n",
-                    wl.getQuantity(),
-                    quantity,
-                    wineName,
-                    sellerId);
-            throw new IllegalArgumentException(msg);
+        if (quantity < 0) {
+            throw new IllegalArgumentException("Quantity must be a positive integer.");
         }
         return wl.getCostPerUnit() * quantity;
 
