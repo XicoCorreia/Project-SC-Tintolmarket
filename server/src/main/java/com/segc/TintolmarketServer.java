@@ -5,6 +5,8 @@ package com.segc;
 
 import com.segc.exception.DuplicateElementException;
 
+import javax.swing.*;
+import java.awt.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -70,6 +72,10 @@ public class TintolmarketServer {
         }
     }
 
+    public void add(String wineName, ImageIcon label) {
+        wineCatalog.add(wineName, label);
+    }
+
     public void sell(String wineName, String sellerId, double value, int quantity) {
         wineCatalog.sell(wineName, sellerId, value, quantity);
     }
@@ -110,8 +116,8 @@ public class TintolmarketServer {
                 case "add":
                 case "a":
                     wineName = (String) inStream.readObject();
-                    //TODO Path?File?
-                    //add(wine, File);
+                    ImageIcon label = (ImageIcon) inStream.readObject();
+                    add(wineName, label);
                     break;
                 case "sell":
                 case "s":

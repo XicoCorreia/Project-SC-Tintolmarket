@@ -1,9 +1,10 @@
 package com.segc;
 
 import java.io.*;
-import java.nio.file.Files;
+import java.util.LinkedList;
+import java.util.List;
 import java.nio.file.Path;
-import java.util.stream.Stream;
+import java.util.Objects;
 
 /**
  * @author fc54685 Francisco Correia
@@ -39,11 +40,12 @@ public class DataPersistenceService<T extends Serializable> {
         putObject(obj, filePath.toString());
     }
 
-    public final Stream<T> getObjects(String directoryName) {
-        try (Stream<Path> filePaths = Files.walk(Path.of(directoryName))) {
-            return filePaths.map(this::getObject);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    public final List<T> getObjects(String directoryName) {
+        List<T> list = new LinkedList<>();
+        File dir = new File(directoryName);
+        for (File file : Objects.requireNonNull(dir.listFiles())) {
+            list.add(getObject(file.toPath()));
         }
+        return list;
     }
 }

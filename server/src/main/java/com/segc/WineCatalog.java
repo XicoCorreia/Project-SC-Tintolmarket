@@ -2,11 +2,9 @@ package com.segc;
 
 import com.segc.exception.DuplicateElementException;
 
+import javax.swing.*;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @author fc54685 Francisco Correia
@@ -14,22 +12,25 @@ import java.util.Optional;
  * @author fc56272 Filipe Egipto
  */
 public class WineCatalog {
+    public final String wineDataDir;
     private final Map<String, Wine> wines;
     private final DataPersistenceService<Wine> dps;
-    public final String wineDataDir;
 
     public WineCatalog() {
         this.wines = new HashMap<>();
         this.dps = new DataPersistenceService<>();
         this.wineDataDir = Configuration.getInstance().getValue("wineDataDir");
-        dps.getObjects(wineDataDir).forEach(wine -> wines.put(wine.getName(), wine));
+        dps.getObjects(wineDataDir).forEach(wine -> {
+            wines.put(wine.getName(), wine);
+            wine.drawLabel();
+        });
     }
 
-    public void add(String wineName, String labelPath) throws DuplicateElementException {
+    public void add(String wineName, ImageIcon label) throws DuplicateElementException {
         if (wines.containsKey(wineName)) {
             throw new DuplicateElementException();
         }
-        Wine wine = new Wine(wineName, labelPath);
+        Wine wine = new Wine(wineName, label);
         wines.put(wineName, wine);
         dps.putObject(wine, Path.of(wineDataDir, wineName));
     }
@@ -49,13 +50,13 @@ public class WineCatalog {
     }
 
     public String view(String wineName) throws NoSuchElementException {
-        return Optional.of(wines.get(wineName)).orElseThrow().toString();
+        return Optional.ofNullable(wines.get(wineName)).orElseThrow().toString();
     }
 
     public double buy(String wineName, String sellerId, int quantity)
             throws NoSuchElementException, IllegalArgumentException {
-        Wine wine = Optional.of(wines.get(wineName)).orElseThrow();
-        WineListing wl = Optional.of(wine.getListings().get(sellerId)).orElseThrow();
+        Wine wine = Optional.ofNullable(wines.get(wineName)).orElseThrow();
+        WineListing wl = Optional.ofNullable(wine.getListings().get(sellerId)).orElseThrow();
         wl.removeQuantity(quantity); // TODO: boolean if (quantity == wl.getQuantity()), apagar este WineListing
         dps.putObject(wine, Path.of(wineDataDir, wine.getName()));
         return wl.getCostPerUnit() * quantity;
@@ -63,7 +64,7 @@ public class WineCatalog {
 
     public double getPrice(String wineName, String sellerId, int quantity)
             throws NoSuchElementException, IllegalArgumentException {
-        WineListing wl = Optional.of(wines.get(wineName)).orElseThrow().getListing(sellerId);
+        WineListing wl = Optional.ofNullable(wines.get(wineName)).orElseThrow().getListing(sellerId);
         if (wl.getQuantity() < quantity) {
             String msg = String.format(
                     "Requested quantity %d exceeds available quantity %d for wine '%s' sold by '%s'.%n",
@@ -79,7 +80,7 @@ public class WineCatalog {
 
     public void classify(String wineName, int stars) throws NoSuchElementException, IllegalArgumentException {
         Wine wine = wines.get(wineName);
-        Optional.of(wine).orElseThrow().addRating(stars);
+        Optional.ofNullable(wine).orElseThrow().addRating(stars);
         dps.putObject(wine, Path.of(wineDataDir, wine.getName()));
     }
 }
