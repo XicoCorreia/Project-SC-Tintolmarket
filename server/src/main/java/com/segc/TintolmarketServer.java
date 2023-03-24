@@ -8,8 +8,6 @@ import com.segc.exception.DuplicateElementException;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @author fc54685 Francisco Correia
@@ -38,16 +36,6 @@ public class TintolmarketServer {
             if (f.getParentFile().mkdirs() || f.createNewFile()) {
                 System.out.println("ficheiro '" + userCredentialsFilename + "' criado");
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static Map<String, String> getUsersFromFile(File file) {
-        try (BufferedReader usersReader = new BufferedReader(new FileReader(file))) {
-            return usersReader.lines()
-                              .map(s -> s.split(":", 2))
-                              .collect(Collectors.toMap(x -> x[0], x -> x[1]));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -82,7 +70,7 @@ public class TintolmarketServer {
         }
     }
 
-    public void sell(String wineName, String sellerId, int value, int quantity) {
+    public void sell(String wineName, String sellerId, double value, int quantity) {
         wineCatalog.sell(wineName, sellerId, value, quantity);
     }
 
@@ -104,16 +92,74 @@ public class TintolmarketServer {
         return userCatalog.read(clientId);
     }
 
-    private void interactionLoop() {
+    public String view(String wineName) {
+        return wineCatalog.view(wineName);
+    }
+
+    public void classify(String wineName, int stars) {
+        wineCatalog.classify(wineName, stars);
+    }
+
+    private void interactionLoop(ObjectOutputStream outStream, ObjectInputStream inStream, String clientId)
+            throws ClassNotFoundException, IOException {
         while (true) {
-            // TODO: faz cenas
+            String command = (String) inStream.readObject();
+            String wineName;
+            switch (command) {
+                case "add":
+                case "a":
+                    wineName = (String) inStream.readObject();
+                    //TODO Path?File?
+                    //add(wine, File);
+                    break;
+                case "sell":
+                case "s":
+                    wineName = (String) inStream.readObject();
+                    double value = (Double) inStream.readObject();
+                    int quantity = (Integer) inStream.readObject();
+                    sell(wineName, clientId, value, quantity);
+                    break;
+                case "view":
+                case "v":
+                    wineName = (String) inStream.readObject();
+                    view(wineName);
+                    break;
+                case "buy":
+                case "b":
+                    wineName = (String) inStream.readObject();
+                    String sellerId = (String) inStream.readObject();
+                    quantity = (Integer) inStream.readObject();
+                    buy(clientId, wineName, sellerId, quantity);
+                    break;
+                case "wallet":
+                case "w":
+                    wallet(clientId);
+                    break;
+                case "classify":
+                case "c":
+                    wineName = (String) inStream.readObject();
+                    int stars = (Integer) inStream.readObject();
+                    classify(wineName, stars);
+                    break;
+                case "talk":
+                case "t":
+                    String recipientId = (String) inStream.readObject();
+                    String message = (String) inStream.readObject();
+                    talk(recipientId, message, clientId);
+                    break;
+                case "read":
+                case "r":
+                    read(clientId);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unexpected command: " + command);
+            }
         }
     }
 
     class ServerThread extends Thread {
 
         private final Socket socket;
-        private User sessionUser;
 
         ServerThread(Socket inSoc) {
             this.socket = inSoc;
@@ -143,14 +189,14 @@ public class TintolmarketServer {
                 }
                 outStream.writeObject(isAuthenticated);
                 if (isAuthenticated) {
-                    // interactionLoop(); // TODO
+                    interactionLoop(outStream, inStream, clientId); // TODO
                 } else {
                     System.out.println("Authentication failed for user '" + clientId + "'.");
                 }
                 socket.shutdownOutput();
                 socket.close();
 
-            } catch (IOException e) {
+            } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }
