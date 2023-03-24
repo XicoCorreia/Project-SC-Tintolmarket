@@ -73,15 +73,17 @@ public class TintolmarketServer {
         }
     }
 
-    public void add(String wineName, ImageIcon label) {
+    public void add(String wineName, ImageIcon label) throws DuplicateElementException {
         wineCatalog.add(wineName, label);
     }
 
-    public void sell(String wineName, String sellerId, double value, int quantity) {
+    public void sell(String wineName, String sellerId, double value, int quantity)
+            throws DuplicateElementException, NoSuchElementException, IllegalArgumentException {
         wineCatalog.sell(wineName, sellerId, value, quantity);
     }
 
-    public void buy(String buyerId, String wineName, String sellerId, int quantity) {
+    public void buy(String buyerId, String wineName, String sellerId, int quantity)
+            throws DuplicateElementException, NoSuchElementException, IllegalArgumentException {
         double balance = userCatalog.getBalance(buyerId);
         if (balance < wineCatalog.getPrice(wineName, sellerId, quantity)) {
             String msg = String.format("Buyer '%s' has insufficient funds to make this purchase.", buyerId);
@@ -91,23 +93,23 @@ public class TintolmarketServer {
         userCatalog.transferBalance(buyerId, sellerId, price);
     }
 
-    public double wallet(String clientId) {
+    public double wallet(String clientId) throws NoSuchElementException {
         return userCatalog.getBalance(clientId);
     }
 
-    public void talk(String recipient, String message, String sender) {
+    public void talk(String recipient, String message, String sender) throws NoSuchElementException {
         userCatalog.talk(sender, recipient, message);
     }
 
-    public Message read(String clientId) {
+    public Message read(String clientId) throws NoSuchElementException, IllegalArgumentException {
         return userCatalog.read(clientId);
     }
 
-    public String view(String wineName) {
+    public String view(String wineName) throws NoSuchElementException {
         return wineCatalog.view(wineName);
     }
 
-    public void classify(String wineName, int stars) {
+    public void classify(String wineName, int stars) throws NoSuchElementException, IllegalArgumentException {
         wineCatalog.classify(wineName, stars);
     }
 
@@ -175,9 +177,8 @@ public class TintolmarketServer {
                         outStream.writeObject("Error");
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
                     } catch (IllegalArgumentException e) {
-                        //TODO - pode ser unidades insuficientes ou saldo insuficiente - msgs diferents
                         outStream.writeObject("Error");
-                        outStream.writeObject(e.getMessage());
+                        outStream.writeObject(e.getMessage()); // exception message contains more details
                     }
                     break;
                 }

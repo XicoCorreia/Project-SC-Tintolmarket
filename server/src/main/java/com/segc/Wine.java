@@ -104,7 +104,10 @@ public class Wine implements Serializable {
     /**
      * @param stars The rating to add to this wine's ratings.
      */
-    public void addRating(int stars) {
+    public void addRating(int stars) throws IllegalArgumentException {
+        if (stars < 0 || stars > 5) {
+            throw new IllegalArgumentException("Rating must be a positive integer in the range [0, 5].");
+        }
         this.ratings.add(stars);
     }
 

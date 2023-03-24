@@ -68,10 +68,16 @@ public class UserCatalog {
         dps.putObject(recipient, Path.of(userDataDir, recipientId));
     }
 
-    public Message read(String clientId) {
+    public Message read(String clientId) throws NoSuchElementException, IllegalArgumentException {
         User recipient = Optional.ofNullable(users.get(clientId)).orElseThrow();
-        Message message = recipient.readMessage();
-        dps.putObject(recipient, Path.of(userDataDir, clientId));
-        return message;
+        try {
+            Message message = recipient.readMessage();
+            dps.putObject(recipient, Path.of(userDataDir, clientId));
+            return message;
+        } catch (NoSuchElementException e) {
+            String msg = String.format("User '%s' has no unread messages.", clientId);
+            throw new IllegalArgumentException(msg);
+        }
+
     }
 }
