@@ -73,15 +73,17 @@ public class TintolmarketServer {
         }
     }
 
-    public void add(String wineName, ImageIcon label) {
+    public void add(String wineName, ImageIcon label) throws DuplicateElementException {
         wineCatalog.add(wineName, label);
     }
 
-    public void sell(String wineName, String sellerId, double value, int quantity) {
+    public void sell(String wineName, String sellerId, double value, int quantity)
+            throws DuplicateElementException, NoSuchElementException, IllegalArgumentException {
         wineCatalog.sell(wineName, sellerId, value, quantity);
     }
 
-    public void buy(String buyerId, String wineName, String sellerId, int quantity) {
+    public void buy(String buyerId, String wineName, String sellerId, int quantity)
+            throws DuplicateElementException, NoSuchElementException, IllegalArgumentException {
         double balance = userCatalog.getBalance(buyerId);
         if (balance < wineCatalog.getPrice(wineName, sellerId, quantity)) {
             String msg = String.format("Buyer '%s' has insufficient funds to make this purchase.", buyerId);
@@ -91,23 +93,23 @@ public class TintolmarketServer {
         userCatalog.transferBalance(buyerId, sellerId, price);
     }
 
-    public double wallet(String clientId) {
+    public double wallet(String clientId) throws NoSuchElementException {
         return userCatalog.getBalance(clientId);
     }
 
-    public void talk(String recipient, String message, String sender) {
+    public void talk(String recipient, String message, String sender) throws NoSuchElementException {
         userCatalog.talk(sender, recipient, message);
     }
 
-    public Message read(String clientId) {
+    public Message read(String clientId) throws NoSuchElementException, IllegalArgumentException {
         return userCatalog.read(clientId);
     }
 
-    public String view(String wineName) {
+    public String view(String wineName) throws NoSuchElementException {
         return wineCatalog.view(wineName);
     }
 
-    public void classify(String wineName, int stars) {
+    public void classify(String wineName, int stars) throws NoSuchElementException, IllegalArgumentException {
         wineCatalog.classify(wineName, stars);
     }
 
@@ -115,122 +117,111 @@ public class TintolmarketServer {
             throws ClassNotFoundException, IOException {
         boolean isExiting = false;
         while (!isExiting) {
-            String command = ((String) inStream.readObject()).toLowerCase();
+            Opcode command = (Opcode) inStream.readObject();
             switch (command) {
-                case "add":
-                case "a": {
+                case ADD: {
                     String wineName = (String) inStream.readObject();
                     ImageIcon label = (ImageIcon) inStream.readObject();
                     try {
                         add(wineName, label);
-                        outStream.writeObject("Ok");
+                        outStream.writeObject(Opcode.OK);
                         outStream.writeObject("Wine '" + wineName + "' successfully added.");
                     } catch (Exception e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Wine already exists");
                     }
                     break;
                 }
-                case "sell":
-                case "s": {
+                case SELL: {
                     String wineName = (String) inStream.readObject();
                     double value = (Double) inStream.readObject();
                     int quantity = (Integer) inStream.readObject();
                     try {
                         sell(wineName, clientId, value, quantity);
-                        outStream.writeObject("Ok");
+                        outStream.writeObject(Opcode.OK);
                         outStream.writeObject("Wine '" + wineName + "' successfully added to the market.");
                     } catch (NoSuchElementException e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
                     } catch (DuplicateElementException e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("You are already selling wine '" + wineName + "'.");
                     }
                     break;
                 }
-                case "view":
-                case "v": {
+                case VIEW: {
                     String wineName = (String) inStream.readObject();
                     try {
                         String s = view(wineName);
-                        outStream.writeObject("Ok");
+                        outStream.writeObject(Opcode.OK);
                         outStream.writeObject(s);
                     } catch (Exception e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
                     }
                     break;
                 }
-                case "buy":
-                case "b": {
+                case BUY: {
                     String wineName = (String) inStream.readObject();
                     String sellerId = (String) inStream.readObject();
                     int quantity = (Integer) inStream.readObject();
                     try {
                         buy(clientId, wineName, sellerId, quantity);
-                        outStream.writeObject("Ok");
+                        outStream.writeObject(Opcode.OK);
                         outStream.writeObject("Wine '" + wineName + "' bought successfully.");
                     } catch (NoSuchElementException e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
                     } catch (IllegalArgumentException e) {
-                        //TODO - pode ser unidades insuficientes ou saldo insuficiente - msgs diferents
-                        outStream.writeObject("Error");
-                        outStream.writeObject(e.getMessage());
+                        outStream.writeObject(Opcode.ERROR);
+                        outStream.writeObject(e.getMessage()); // exception message contains more details
                     }
                     break;
                 }
-                case "wallet":
-                case "w": {
+                case WALLET: {
                     double d = wallet(clientId);
-                    outStream.writeObject("Ok");
+                    outStream.writeObject(Opcode.OK);
                     outStream.writeObject("Your balance is " + d + "$.");
                     break;
                 }
-                case "classify":
-                case "c": {
+                case CLASSIFY: {
                     String wineName = (String) inStream.readObject();
                     int stars = (Integer) inStream.readObject();
                     try {
                         classify(wineName, stars);
-                        outStream.writeObject("Ok");
+                        outStream.writeObject(Opcode.OK);
                         outStream.writeObject("Classification added successfully.");
                     } catch (Exception e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
                     }
                     break;
                 }
-                case "talk":
-                case "t": {
+                case TALK: {
                     String recipientId = (String) inStream.readObject();
                     String message = (String) inStream.readObject();
                     try {
                         talk(recipientId, message, clientId);
-                        outStream.writeObject("Ok");
+                        outStream.writeObject(Opcode.OK);
                         outStream.writeObject("Message sent successfully.");
                     } catch (Exception e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("User '" + recipientId + "' does not exist.");
                     }
                     break;
                 }
-                case "read":
-                case "r": {
+                case READ: {
                     try {
                         Message m = read(clientId);
-                        outStream.writeObject("Ok");
+                        outStream.writeObject(Opcode.OK);
                         outStream.writeObject(m.toString());
                     } catch (Exception e) {
-                        outStream.writeObject("Error");
+                        outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("No messages to read.");
                     }
                     break;
                 }
-                case "exit":
-                case "quit":
-                case "stop": {
+                case EXIT: {
                     isExiting = true;
                     break;
                 }
@@ -272,7 +263,7 @@ public class TintolmarketServer {
                 }
                 outStream.writeObject(isAuthenticated);
                 if (isAuthenticated) {
-                    interactionLoop(outStream, inStream, clientId); // TODO
+                    interactionLoop(outStream, inStream, clientId);
                 } else {
                     System.out.println("Authentication failed for user '" + clientId + "'.");
                 }
