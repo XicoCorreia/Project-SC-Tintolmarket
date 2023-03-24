@@ -20,10 +20,7 @@ public class WineCatalog {
         this.wines = new HashMap<>();
         this.dps = new DataPersistenceService<>();
         this.wineDataDir = Configuration.getInstance().getValue("wineDataDir");
-        dps.getObjects(wineDataDir).forEach(wine -> {
-            wines.put(wine.getName(), wine);
-            wine.drawLabel();
-        });
+        dps.getObjects(wineDataDir).forEach(wine -> wines.put(wine.getName(), wine));
     }
 
     public void add(String wineName, ImageIcon label) throws DuplicateElementException {
