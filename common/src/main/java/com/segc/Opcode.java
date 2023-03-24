@@ -12,5 +12,6 @@ public enum Opcode {
     TALK,
     READ,
     EXIT,
+    INVALID,
 }
 

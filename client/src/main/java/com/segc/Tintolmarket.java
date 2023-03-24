@@ -3,17 +3,14 @@
  */
 package com.segc;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Scanner;
 
 import javax.swing.ImageIcon;
@@ -26,17 +23,36 @@ import javax.swing.ImageIcon;
 public class Tintolmarket {
 
     public static final int DEFAULT_PORT = 12345;
+    private static final Map<String, Opcode> opcodes = Map.ofEntries(
+            Map.entry("a", Opcode.ADD),
+            Map.entry("add", Opcode.ADD),
+            Map.entry("s", Opcode.SELL),
+            Map.entry("sell", Opcode.SELL),
+            Map.entry("v", Opcode.VIEW),
+            Map.entry("view", Opcode.VIEW),
+            Map.entry("b", Opcode.BUY),
+            Map.entry("buy", Opcode.BUY),
+            Map.entry("w", Opcode.WALLET),
+            Map.entry("wallet", Opcode.WALLET),
+            Map.entry("c", Opcode.CLASSIFY),
+            Map.entry("classify", Opcode.CLASSIFY),
+            Map.entry("t", Opcode.TALK),
+            Map.entry("talk", Opcode.TALK),
+            Map.entry("r", Opcode.READ),
+            Map.entry("read", Opcode.READ),
+            Map.entry("exit", Opcode.EXIT),
+            Map.entry("quit", Opcode.EXIT));
 
-    private static final String COMMANDS = "Available commands:\n" +
-            "- add <wine> <image>\n" +
-            "- sell <wine> <value> <quantity>\n" +
-            "- view <wine>\n" +
-            "- buy <wine> <seller> <quantity>\n" +
-            "- wallet\n" +
-            "- classify <wine> <stars>\n" +
-            "- talk <user> <message>\n" +
-            "- read\n" +
-            "- quit\n";
+    private static final String COMMANDS = String.format("Available commands:%n" +
+            "- add <wine> <image>%n" +
+            "- sell <wine> <value> <quantity>%n" +
+            "- view <wine>%n" +
+            "- buy <wine> <seller> <quantity>%n" +
+            "- wallet%n" +
+            "- classify <wine> <stars>%n" +
+            "- talk <user> <message>%n" +
+            "- read%n" +
+            "- quit%n");
 
 
     public static void main(String[] args) {
@@ -48,7 +64,7 @@ public class Tintolmarket {
 
         String serverAddress = args[0];
         String user = args[1];
-        String pass = args.length > 2 ? args[2] : null; // TODO: ask for password if not specified
+        String pass = args.length > 2 ? args[2] : null;
         String host = serverAddress;
         int port = DEFAULT_PORT;
 
@@ -61,12 +77,12 @@ public class Tintolmarket {
         try (Socket socket = new Socket(host, port);
              ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream())) {
-        	
+
             Scanner sc = new Scanner(System.in);
-            
-            if(pass == null) {
-            	System.out.println("Enter your password: ");
-            	pass = sc.next();
+
+            if (pass == null) {
+                System.out.println("Enter your password: ");
+                pass = sc.nextLine();
             }
             outStream.writeObject(user);
             outStream.writeObject(pass);
@@ -76,50 +92,54 @@ public class Tintolmarket {
                 System.exit(1);
             }
 
-            System.out.print("Authenticated.\n" + COMMANDS);
+            System.out.printf("Authenticated.%n%s%n", COMMANDS);
             boolean isExiting = false;
-            
-            while (!isExiting && sc.hasNext()) {
+
+            while (!isExiting && sc.hasNextLine()) {
                 String command = sc.nextLine();
                 String[] c = command.split(" ");
-                switch (c[0]) {
-                    case "add":
-                    case "a":
+                Opcode opcode = opcodes.getOrDefault(c[0].toLowerCase(), Opcode.INVALID);
+                switch (opcode) {
+                    case ADD: {
                         add(outStream, c, sc);
                         break;
-                    case "sell":
-                    case "s":
+                    }
+                    case SELL: {
                         sell(outStream, c);
                         break;
-                    case "view":
-                    case "v":
+                    }
+                    case VIEW: {
                         view(outStream, c);
                         break;
-                    case "buy":
-                    case "b":
+                    }
+                    case BUY: {
                         buy(outStream, c);
                         break;
-                    case "wallet":
-                    case "w":
+                    }
+                    case WALLET: {
                         wallet(outStream, c);
                         break;
-                    case "classify":
-                    case "c":
+                    }
+                    case CLASSIFY: {
                         classify(outStream, c);
                         break;
-                    case "talk":
-                    case "t":
+                    }
+                    case TALK: {
                         talk(outStream, c);
                         break;
-                    case "read":
-                    case "r":
+                    }
+                    case READ: {
                         read(outStream, c);
                         break;
-                    case "quit":  
-                    	isExiting = true;
-                    break;		
-                    default:
+                    }
+                    case EXIT: {
+                        isExiting = true;
+                        break;
+                    }
+                    case INVALID:
+                    default: {
                         throw new IllegalArgumentException("Unexpected command: " + command);
+                    }
                 }
             }
             sc.close();
@@ -137,11 +157,11 @@ public class Tintolmarket {
         outStream.writeObject(command[0]);
         outStream.writeObject(command[1]);
         Path path = Paths.get(command[2]);
-        
-	    while(!Files.exists(path)) {
-	    	System.out.println("Enter the path to the wine image: ");
-	    	path = Paths.get(sc.next());
-	    }
+
+        while (!Files.exists(path)) {
+            System.out.println("Enter the path to the wine image: ");
+            path = Paths.get(sc.nextLine());
+        }
         ImageIcon image = new ImageIcon(command[2]);
         outStream.writeObject(image);
 
