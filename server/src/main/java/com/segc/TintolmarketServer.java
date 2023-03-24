@@ -21,6 +21,7 @@ public class TintolmarketServer {
     private final int port;
     private final UserCatalog userCatalog;
     private final WineCatalog wineCatalog;
+    private final AuthenticationService authService;
 
     public TintolmarketServer(int port) {
         this(port, Configuration.getInstance().getValue("userCredentials"), new WineCatalog(), new UserCatalog());
@@ -33,6 +34,7 @@ public class TintolmarketServer {
         this.port = port;
         this.wineCatalog = wineCatalog;
         this.userCatalog = userCatalog;
+        this.authService = AuthenticationService.getInstance();
         File f = new File(userCredentialsFilename);
         try {
             if (f.getParentFile().mkdirs() || f.createNewFile()) {
@@ -250,12 +252,11 @@ public class TintolmarketServer {
                 }
                 boolean isAuthenticated;
                 try {
+                    isAuthenticated = authService.authenticateUser(clientId, password);
+                } catch (NoSuchElementException e) { // 1.b user does not exist
+                    authService.registerUser(clientId, password);
                     userCatalog.add(clientId);
-                    AuthenticationService.getInstance().registerUser(clientId, password);
-                    isAuthenticated = AuthenticationService.getInstance().authenticateUser(clientId, password);
-                } catch (DuplicateElementException e) {
-                    System.out.printf("Unable to register user '%s': user already exists.%n", clientId);
-                    isAuthenticated = false;
+                    isAuthenticated = true;
                 }
                 outStream.writeObject(isAuthenticated);
                 if (isAuthenticated) {

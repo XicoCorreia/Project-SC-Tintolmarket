@@ -14,9 +14,9 @@ import java.util.Optional;
  * @author fc56272 Filipe Egipto
  */
 public class UserCatalog {
+    public final String userDataDir;
     private final Map<String, User> users;
     private final DataPersistenceService<User> dps;
-    public final String userDataDir;
 
     public UserCatalog() {
         this.users = new HashMap<>();
