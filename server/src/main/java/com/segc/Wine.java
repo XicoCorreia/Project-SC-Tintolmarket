@@ -6,8 +6,10 @@ package com.segc;
 import javax.swing.*;
 import java.awt.*;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 /**
  * @author fc54685 Francisco Correia
@@ -17,56 +19,60 @@ import java.util.List;
 public class Wine implements Serializable {
     private static final long serialVersionUID = 102672917111219812L;
     private final String name;
-    private final String labelPath;
-    private final List<Integer> ratings;
+    private final ImageIcon label;
+    private final LinkedList<Integer> ratings;
+    private final HashMap<String, WineListing> wineListings;
 
     /**
-     * Creates a {@code Wine} with the given name.
+     * Creates a {@link Wine} with the given name and label.
      *
-     * @param name The name for this wine.
+     * @param name  the name for this wine.
+     * @param label an image of this wine's label.
      */
-    public Wine(String name) {
-        this(name, null);
+    public Wine(String name, ImageIcon label) {
+        this(name, label, new LinkedList<>());
     }
 
     /**
-     * Creates a {@code Wine} with the given name and label.
+     * Creates a {@link Wine} with the given name, label and list of ratings.
      *
-     * @param name      the name for this wine.
-     * @param labelPath the path to an image of this wine's label.
+     * @param name    The name for this wine.
+     * @param label   an image of this wine's label.
+     * @param ratings A list of ratings (between 1 and 5, inclusive).
      */
-    public Wine(String name, String labelPath) {
-        this(name, labelPath, new LinkedList<>());
+    public Wine(String name, ImageIcon label, LinkedList<Integer> ratings) {
+        this(name, label, ratings, new HashMap<>());
     }
 
     /**
-     * Creates a {@code Wine} with the given name, label and list of ratings.
+     * Creates a {@link Wine} with the given name, label, list of ratings and collection of wine listings.
      *
-     * @param name      The name for this wine.
-     * @param labelPath The path to an image of this wine's label.
-     * @param ratings   A list of ratings (between 1 and 5, inclusive).
+     * @param name         The name for this wine.
+     * @param label        an image of this wine's label.
+     * @param ratings      A list of ratings (between 1 and 5, inclusive).
+     * @param wineListings A collection of {@link WineListing} listed by a seller ({@link User}) with the given id.
      */
-    public Wine(String name, String labelPath, List<Integer> ratings) {
+    public Wine(String name, ImageIcon label, LinkedList<Integer> ratings, HashMap<String, WineListing> wineListings) {
         this.name = name;
-        this.labelPath = labelPath;
+        this.label = label;
         this.ratings = ratings;
+        this.wineListings = wineListings;
     }
 
     /**
-     * @return The path to an image of this wine's label.
+     * @return an image of this wine's label.
      */
-    public String getLabelPath() {
-        return labelPath;
+    public ImageIcon getLabel() {
+        return label;
     }
 
     /**
      * Draws this wine's label.
      */
     public void drawLabel() {
-        ImageIcon image = new ImageIcon(labelPath);
         JFrame jFrame = new JFrame(this.name);
         jFrame.setLayout(new BorderLayout());
-        JLabel jLabel = new JLabel(image);
+        JLabel jLabel = new JLabel(this.label);
         jFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         jFrame.add(jLabel);
         jFrame.setLocationRelativeTo(null);
@@ -100,5 +106,21 @@ public class Wine implements Serializable {
      */
     public void addRating(int stars) {
         this.ratings.add(stars);
+    }
+
+    public WineListing getListing(String sellerId) throws NoSuchElementException {
+        return Optional.ofNullable(wineListings.get(sellerId)).orElseThrow();
+    }
+
+    public HashMap<String, WineListing> getListings() {
+        return this.wineListings;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("Wine '%s' has an average rating of %.2f.%n", name, getRating()));
+        wineListings.values().forEach(sb::append);
+        return sb.toString();
     }
 }
