@@ -43,6 +43,9 @@ public class DataPersistenceService<T extends Serializable> {
     public final List<T> getObjects(String directoryName) {
         List<T> list = new LinkedList<>();
         File dir = new File(directoryName);
+        if (dir.mkdirs()) {
+            System.out.println("Created directory: " + dir.getAbsolutePath());
+        }
         for (File file : Objects.requireNonNull(dir.listFiles())) {
             list.add(getObject(file.toPath()));
         }

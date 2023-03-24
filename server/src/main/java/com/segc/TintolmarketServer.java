@@ -6,7 +6,6 @@ package com.segc;
 import com.segc.exception.DuplicateElementException;
 
 import javax.swing.*;
-import java.awt.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -36,7 +35,7 @@ public class TintolmarketServer {
         File f = new File(userCredentialsFilename);
         try {
             if (f.getParentFile().mkdirs() || f.createNewFile()) {
-                System.out.println("ficheiro '" + userCredentialsFilename + "' criado");
+                System.out.println("Created file: " + userCredentialsFilename);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
