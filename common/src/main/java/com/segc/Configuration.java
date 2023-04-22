@@ -46,4 +46,13 @@ public class Configuration {
         return props.getProperty(key);
     }
 
+    /**
+     * Returns the value mapped to the given {@code key} or {@code null} otherwise.
+     *
+     * @param key the property key to look up
+     * @return the value mapped to the given {@code key} or {@code null} otherwise
+     */
+    public int getInt(String key) {
+        return Integer.parseInt(getValue(key));
+    }
 }

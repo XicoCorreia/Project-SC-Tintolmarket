@@ -17,9 +17,10 @@ public class WineCatalog {
     private final DataPersistenceService<Wine> dps;
 
     public WineCatalog() {
+        Configuration config = Configuration.getInstance();
         this.wines = new HashMap<>();
-        this.dps = new DataPersistenceService<>();
-        this.wineDataDir = Configuration.getInstance().getValue("wineDataDir");
+        this.dps = new DataPersistenceService<>(config.getValue("digestAlgorithm"));
+        this.wineDataDir = config.getValue("wineDataDir");
         dps.getObjects(wineDataDir).forEach(wine -> wines.put(wine.getName(), wine));
     }
 
@@ -29,7 +30,7 @@ public class WineCatalog {
         }
         Wine wine = new Wine(wineName, label);
         wines.put(wineName, wine);
-        dps.putObject(wine, Path.of(wineDataDir, wineName));
+        dps.putObjectAndDigest(wine, Path.of(wineDataDir, wineName));
     }
 
     public void sell(String wineName, String sellerId, double costPerUnit, int quantity)
@@ -37,7 +38,7 @@ public class WineCatalog {
         Wine wine = Optional.ofNullable(wines.get(wineName)).orElseThrow();
         WineListing wl = new WineListing(sellerId, costPerUnit, quantity);
         if (wine.getListings().putIfAbsent(sellerId, wl) == null) {
-            dps.putObject(wine, Path.of(wineDataDir, wine.getName()));
+            dps.putObjectAndDigest(wine, Path.of(wineDataDir, wine.getName()));
         } else {
             throw new DuplicateElementException();
         }
@@ -55,7 +56,7 @@ public class WineCatalog {
         if (wl.getQuantity() == 0) {
             wine.removeListing(sellerId);
         }
-        dps.putObject(wine, Path.of(wineDataDir, wine.getName()));
+        dps.putObjectAndDigest(wine, Path.of(wineDataDir, wine.getName()));
         return wl.getCostPerUnit() * quantity;
     }
 
@@ -72,6 +73,6 @@ public class WineCatalog {
     public void classify(String wineName, int stars) throws NoSuchElementException, IllegalArgumentException {
         Wine wine = wines.get(wineName);
         Optional.ofNullable(wine).orElseThrow().addRating(stars);
-        dps.putObject(wine, Path.of(wineDataDir, wine.getName()));
+        dps.putObjectAndDigest(wine, Path.of(wineDataDir, wine.getName()));
     }
 }

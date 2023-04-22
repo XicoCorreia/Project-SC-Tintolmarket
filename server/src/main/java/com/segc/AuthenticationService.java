@@ -15,10 +15,12 @@ import java.util.NoSuchElementException;
 public class AuthenticationService {
 
     private static final AuthenticationService instance = new AuthenticationService();
+    private static final CipherService cipherService = CipherService.getInstance();
+    private static final Configuration config = Configuration.getInstance();
     private final File userCredentials;
 
     private AuthenticationService() {
-        userCredentials = new File(Configuration.getInstance().getValue("userCredentials"));
+        userCredentials = new File(config.getValue("userCredentials"));
         try {
             if (userCredentials.getParentFile().mkdirs() || userCredentials.createNewFile()) {
                 System.out.println(getClass().getSimpleName() + ": created empty user credentials file.");
