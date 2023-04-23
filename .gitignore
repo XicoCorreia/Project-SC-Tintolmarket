@@ -86,4 +86,5 @@ gradle-app.setting
 .classpath
 
 # Project-specific
+client_data/
 server_data/
