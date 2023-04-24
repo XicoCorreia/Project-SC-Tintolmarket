@@ -54,7 +54,6 @@ public class Tintolmarket {
             "- read%n" +
             "- quit%n");
 
-
     public static void main(String[] args) {
         if (args.length < 2) {
             System.out.printf("Invalid arguments.%n" +

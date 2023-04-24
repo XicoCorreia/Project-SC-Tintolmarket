@@ -22,37 +22,40 @@ public class TintolmarketServer {
     private final UserCatalog userCatalog;
     private final WineCatalog wineCatalog;
     private final AuthenticationService authService;
+    private static final Configuration config = Configuration.getInstance();
 
-    public TintolmarketServer(int port) {
-        this(port, Configuration.getInstance().getValue("userCredentials"), new WineCatalog(), new UserCatalog());
+    public TintolmarketServer(int port, AuthenticationService authService) {
+        this(port, new WineCatalog(), new UserCatalog(), authService);
     }
 
     public TintolmarketServer(int port,
-                              String userCredentialsFilename,
                               WineCatalog wineCatalog,
-                              UserCatalog userCatalog) {
+                              UserCatalog userCatalog,
+                              AuthenticationService authService) {
         this.port = port;
         this.wineCatalog = wineCatalog;
         this.userCatalog = userCatalog;
-        this.authService = AuthenticationService.getInstance();
-        File f = new File(userCredentialsFilename);
-        try {
-            if (f.getParentFile().mkdirs() || f.createNewFile()) {
-                System.out.println("Created file: " + userCredentialsFilename);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        this.authService = authService;
     }
 
     public static void main(String[] args) {
         int port = DEFAULT_PORT;
-        if (args.length > 1) {
-            throw new IllegalArgumentException("Too many arguments: expected 0 or 1, got " + args.length);
-        } else if (args.length == 1) {
+        if (args.length < 3 || args.length > 4) {
+            throw new IllegalArgumentException("Too many arguments: expected 3 or 4, got " + args.length);
+        } else if (args.length == 3) {
             port = Integer.parseInt(args[0]);
         }
-        TintolmarketServer tms = new TintolmarketServer(port);
+        char[] password = args[1].toCharArray();
+        File keyStoreFile = new File(args[2]);
+        char[] keyStorePassword = args[3].toCharArray();
+
+        String keyStoreFormat = config.getValue("keyStoreFormat");
+        File userCredentials = new File(config.getValue("userCredentials"));
+
+        CipherService cipherService = new CipherService(keyStoreFile, keyStorePassword, keyStoreFormat);
+        AuthenticationService authService = new AuthenticationService(userCredentials, password, cipherService);
+
+        TintolmarketServer tms = new TintolmarketServer(port, authService);
         tms.startServer();
     }
 

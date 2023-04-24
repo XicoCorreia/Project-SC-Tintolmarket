@@ -6,19 +6,21 @@ import java.io.*;
 import java.util.NoSuchElementException;
 
 /**
- * A singleton class that handles authentication.
+ * A class that handles authentication.
  *
  * @author fc54685 Francisco Correia
  * @author fc55955 Alexandre Fonseca
  * @author fc56272 Filipe Egipto
  */
 public class AuthenticationService {
-
-    private static final AuthenticationService instance = new AuthenticationService();
+    private final CipherService cipherService;
     private final File userCredentials;
+    private final char[] password;
 
-    private AuthenticationService() {
-        userCredentials = new File(Configuration.getInstance().getValue("userCredentials"));
+    public AuthenticationService(File userCredentials, char[] password, CipherService cipherService) {
+        this.cipherService = cipherService;
+        this.password = password; // TODO: password encryption?
+        this.userCredentials = userCredentials;
         try {
             if (userCredentials.getParentFile().mkdirs() || userCredentials.createNewFile()) {
                 System.out.println(getClass().getSimpleName() + ": created empty user credentials file.");
@@ -26,15 +28,6 @@ public class AuthenticationService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Returns the singleton instance of {@code AuthenticationService}.
-     *
-     * @return singleton instance of this class
-     */
-    public static AuthenticationService getInstance() {
-        return instance;
     }
 
     public boolean authenticateUser(String clientId, String password) throws NoSuchElementException {
