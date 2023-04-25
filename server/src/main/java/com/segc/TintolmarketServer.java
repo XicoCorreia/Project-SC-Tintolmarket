@@ -5,6 +5,9 @@ package com.segc;
 
 import com.segc.exception.DuplicateElementException;
 
+import javax.net.ServerSocketFactory;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
 import javax.swing.*;
 import java.io.*;
 import java.net.ServerSocket;
@@ -42,7 +45,7 @@ public class TintolmarketServer {
         int port = DEFAULT_PORT;
         if (args.length < 3 || args.length > 4) {
             throw new IllegalArgumentException("Too many arguments: expected 3 or 4, got " + args.length);
-        } else if (args.length == 3) {
+        } else if (args.length == 4) {
             port = Integer.parseInt(args[0]);
         }
         char[] password = args[1].toCharArray();
@@ -56,11 +59,17 @@ public class TintolmarketServer {
         AuthenticationService authService = new AuthenticationService(userCredentials, password, cipherService);
 
         TintolmarketServer tms = new TintolmarketServer(port, authService);
+        
+    	System.setProperty("javax.net.ssl.keyStore", keyStoreFile.getAbsolutePath());
+    	System.setProperty("javax.net.ssl.keyStorePassword", keyStorePassword.toString());
+    	
         tms.startServer();
     }
 
     public void startServer() {
-        try (ServerSocket sSoc = new ServerSocket(this.port)) {
+
+    	ServerSocketFactory ssf = SSLServerSocketFactory.getDefault();
+        try (SSLServerSocket sSoc = (SSLServerSocket) ssf.createServerSocket(this.port)) {
             while (true) {
                 try {
                     Socket inSoc = sSoc.accept();

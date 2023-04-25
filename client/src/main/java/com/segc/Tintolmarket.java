@@ -7,12 +7,18 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.Scanner;
 
+import javax.net.SocketFactory;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import javax.swing.ImageIcon;
 
 /**
@@ -54,16 +60,19 @@ public class Tintolmarket {
             "- read%n" +
             "- quit%n");
 
-    public static void main(String[] args) {
-        if (args.length < 2) {
+    public static void main(String[] args) throws Exception {
+        if (args.length < 4) {
             System.out.printf("Invalid arguments.%n" +
-                    "Use: java -jar Tintolmarket.jar <serverAddress> <clientId> [password]%n");
+                    "Use: java -jar Tintolmarket.jar  <serverAddress> <truststore> <keystore> <password-keystore> <userID>%n");
             System.exit(1);
         }
-
+        
+        Configuration config = Configuration.getInstance();
         String serverAddress = args[0];
-        String user = args[1];
-        String pass = args.length > 2 ? args[2] : null;
+        String trustStore = args[1];
+        String keyStore = args[2];
+        String passKeyStore = args[3];
+        String user = args[4];
         String host = serverAddress;
         int port = DEFAULT_PORT;
 
@@ -72,24 +81,26 @@ public class Tintolmarket {
             host = hostPort[0];
             port = Integer.parseInt(hostPort[1]);
         }
+        
+        System.setProperty("javax.net.ssl.trustStore", trustStore);
+    	System.setProperty("javax.net.ssl.trustStorePassword", config.getValue("trustStorePassword"));
+        SocketFactory sf = SSLSocketFactory.getDefault();
 
-        try (Socket socket = new Socket(host, port);
+
+        try (SSLSocket socket = (SSLSocket) sf.createSocket(host, port);
              ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream())) {
 
             Scanner sc = new Scanner(System.in);
 
-            if (pass == null) {
-                System.out.println("Enter your password: ");
-                pass = sc.nextLine();
-            }
             outStream.writeObject(user);
-            outStream.writeObject(pass);
-            boolean isAuthenticated = (Boolean) inStream.readObject();
+            /*
+              boolean isAuthenticated = (Boolean) inStream.readObject();
+             
             if (!isAuthenticated) {
                 System.out.println("Authentication failed.");
                 System.exit(1);
-            }
+            }*/
 
             System.out.printf("Authenticated.%n%s%n", COMMANDS);
             boolean isExiting = false;
