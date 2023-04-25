@@ -3,20 +3,19 @@
  */
 package com.segc;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.Scanner;
+import java.security.cert.Certificate;
 
 import javax.net.SocketFactory;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.swing.ImageIcon;
@@ -71,7 +70,7 @@ public class Tintolmarket {
         String serverAddress = args[0];
         String trustStore = args[1];
         String keyStore = args[2];
-        String passKeyStore = args[3];
+        String keyStorePassword = args[3];
         String user = args[4];
         String host = serverAddress;
         int port = DEFAULT_PORT;
@@ -90,17 +89,40 @@ public class Tintolmarket {
         try (SSLSocket socket = (SSLSocket) sf.createSocket(host, port);
              ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream())) {
-
+        	
+            CipherService cipherService = new CipherService(new File(keyStore), keyStorePassword.toCharArray(), config.getValue("keyStoreFormat"));
             Scanner sc = new Scanner(System.in);
 
             outStream.writeObject(user);
-            /*
-              boolean isAuthenticated = (Boolean) inStream.readObject();
+            
+            long nonce = (Long) inStream.readObject();
+            boolean known =  (Boolean) inStream.readObject();
+            
+            if(known) {
+            	byte[] signedNonce = cipherService.encrypt(ByteBuffer.allocate(8).putLong(nonce).array(), config.getValue("keyStoreAlias"), keyStorePassword.toCharArray());
+            	//É necessário funcao write para enviar o array de bytes???
+            	outStream.writeObject(signedNonce);
+            	
+            	if(!inStream.readBoolean()) {
+            		System.out.println("Authentication failed.");
+            		System.exit(1);
+            	}
+            }
+            else {
+            	byte[] signedNonce = cipherService.encrypt(ByteBuffer.allocate(8).putLong(nonce).array(), config.getValue("keyStoreAlias"), keyStorePassword.toCharArray());
+            	//É necessário funcao write para enviar o array de bytes???
+            	outStream.writeObject(signedNonce);
+            	
+            	Certificate publicKey = cipherService.getCertificate(config.getValue("keyStoreAlias"));
+            	outStream.writeObject(publicKey);
+            	
+            	if(!inStream.readBoolean()) {
+            		System.out.println("Authentication failed.");
+            		System.exit(1);
+            	}
+            }
              
-            if (!isAuthenticated) {
-                System.out.println("Authentication failed.");
-                System.exit(1);
-            }*/
+              
 
             System.out.printf("Authenticated.%n%s%n", COMMANDS);
             boolean isExiting = false;
