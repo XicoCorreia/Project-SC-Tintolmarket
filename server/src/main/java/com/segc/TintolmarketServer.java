@@ -233,6 +233,10 @@ public class TintolmarketServer {
                     }
                     break;
                 }
+                case LIST: {
+                    outStream.writeObject(Opcode.OK);
+                    outStream.writeObject(""); //TODO
+                }
                 case EXIT: {
                     isExiting = true;
                     break;

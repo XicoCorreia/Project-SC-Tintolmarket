@@ -13,5 +13,6 @@ public enum Opcode {
     READ,
     EXIT,
     INVALID,
+    LIST,
 }
 

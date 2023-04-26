@@ -45,6 +45,8 @@ public class Tintolmarket {
             Map.entry("talk", Opcode.TALK),
             Map.entry("r", Opcode.READ),
             Map.entry("read", Opcode.READ),
+            Map.entry("l", Opcode.LIST),
+            Map.entry("list", Opcode.LIST),
             Map.entry("exit", Opcode.EXIT),
             Map.entry("quit", Opcode.EXIT));
 
@@ -56,6 +58,7 @@ public class Tintolmarket {
             "- wallet%n" +
             "- classify <wine> <stars>%n" +
             "- talk <user> <message>%n" +
+            "- list%n" +
             "- read%n" +
             "- quit%n");
 
@@ -167,8 +170,9 @@ public class Tintolmarket {
                         break;
                     }
                     case WALLET:
-                    case READ: {
-                        break;
+                    case READ:
+                    case LIST: {
+                        break; //ERROR if length(c) > 1?
                     }
                     default: {
                         throw new RuntimeException();
