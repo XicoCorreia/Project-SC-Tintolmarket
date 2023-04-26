@@ -23,13 +23,18 @@ public class AuthenticationService {
     private final CipherService cipherService;
     private final File userCredentials;
     private final char[] password;
-    private final String usersAlgorithm;
+    private final String userCredentialsAlgorithm;
 
     public AuthenticationService(File userCredentials, char[] password, CipherService cipherService) {
+        this(userCredentials, password, cipherService, Configuration.getInstance().getValue("userCredentialsPBEAlgorithm"));
+    }
+
+    public AuthenticationService(File userCredentials, char[] password, CipherService cipherService,
+                                 String userCredentialsAlgorithm) {
         this.cipherService = cipherService;
         this.password = password;
         this.userCredentials = userCredentials;
-        this.usersAlgorithm = Configuration.getInstance().getValue("userCredentialsPBEAlgorithm");
+        this.userCredentialsAlgorithm = userCredentialsAlgorithm;
         try {
             if (userCredentials.getParentFile().mkdirs() || userCredentials.createNewFile()) {
                 System.out.println(getClass().getSimpleName() + ": created empty user credentials file.");
@@ -54,8 +59,8 @@ public class AuthenticationService {
 
     private String decrypted(String line) {
         try {
-            Cipher c = Cipher.getInstance(usersAlgorithm);
-            c.init(Cipher.DECRYPT_MODE, getKeyFromPassword(usersAlgorithm));
+            Cipher c = Cipher.getInstance(userCredentialsAlgorithm);
+            c.init(Cipher.DECRYPT_MODE, getKeyFromPassword(userCredentialsAlgorithm));
             return new String(c.doFinal(line.getBytes()));
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException |
                  BadPaddingException e) {
@@ -87,8 +92,8 @@ public class AuthenticationService {
 
     private String encrypted(String line) {
         try {
-            Cipher c = Cipher.getInstance(usersAlgorithm);
-            c.init(Cipher.ENCRYPT_MODE, getKeyFromPassword(usersAlgorithm));
+            Cipher c = Cipher.getInstance(userCredentialsAlgorithm);
+            c.init(Cipher.ENCRYPT_MODE, getKeyFromPassword(userCredentialsAlgorithm));
             return new String(c.doFinal(line.getBytes()));
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException |
                  BadPaddingException e) {
