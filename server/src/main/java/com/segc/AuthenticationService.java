@@ -55,4 +55,9 @@ public class AuthenticationService {
             }
         }
     }
+
+	public boolean isRegisteredUser(String clientId) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }
