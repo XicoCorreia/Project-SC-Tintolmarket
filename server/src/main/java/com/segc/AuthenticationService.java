@@ -2,10 +2,7 @@ package com.segc;
 
 import com.segc.exception.DuplicateElementException;
 
-import javax.security.auth.DestroyFailedException;
 import java.io.*;
-import java.security.UnrecoverableKeyException;
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 /**
@@ -22,7 +19,7 @@ public class AuthenticationService {
 
     public AuthenticationService(File userCredentials, char[] password, CipherService cipherService) {
         this.cipherService = cipherService;
-        this.password = password;
+        this.password = password; // TODO: password encryption?
         this.userCredentials = userCredentials;
         try {
             if (userCredentials.getParentFile().mkdirs() || userCredentials.createNewFile()) {
@@ -40,17 +37,8 @@ public class AuthenticationService {
     private String getUserCredentials(String clientId) throws NoSuchElementException {
         String pattern = clientId + ":";
         try (BufferedReader usersReader = new BufferedReader(new FileReader(userCredentials))) {
-            return usersReader.lines().dropWhile(line -> !decrypted(line).startsWith(pattern)).findFirst().orElseThrow();
+            return usersReader.lines().dropWhile(line -> !line.startsWith(pattern)).findFirst().orElseThrow();
         } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private String decrypted(String line) {
-        try {
-            //TODO: Alias
-            return Arrays.toString(cipherService.decrypt(line.getBytes(), "AES", password));
-        } catch (UnrecoverableKeyException | DestroyFailedException e) {
             throw new RuntimeException(e);
         }
     }
@@ -61,19 +49,15 @@ public class AuthenticationService {
             throw new DuplicateElementException();
         } catch (NoSuchElementException e) {
             try (FileWriter fw = new FileWriter(userCredentials, true); BufferedWriter bw = new BufferedWriter(fw)) {
-                bw.write(encrypted(clientId + ":" + password + "\n"));
+                bw.write(clientId + ":" + password + "\n");
             } catch (IOException ioException) {
                 throw new RuntimeException(ioException);
             }
         }
     }
 
-    private String encrypted(String line) {
-        try {
-            //TODO: Alias
-            return Arrays.toString(cipherService.encrypt(line.getBytes(), "AES", password));
-        } catch (UnrecoverableKeyException | DestroyFailedException e) {
-            throw new RuntimeException(e);
-        }
-    }
+	public boolean isRegisteredUser(String clientId) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

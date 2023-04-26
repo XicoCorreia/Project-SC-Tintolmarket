@@ -12,6 +12,7 @@ import javax.swing.*;
 import java.io.*;
 import java.net.Socket;
 import java.util.NoSuchElementException;
+import java.util.Random;
 
 /**
  * @author fc54685 Francisco Correia
@@ -257,21 +258,34 @@ public class TintolmarketServer {
                 ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
                 ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
                 String clientId, password;
+                Random rd = new Random();
+                long nonce = rd.nextLong();
 
                 try {
                     clientId = (String) inStream.readObject();
-                    password = (String) inStream.readObject();
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(e);
                 }
-                boolean isAuthenticated;
-                try {
-                    isAuthenticated = authService.authenticateUser(clientId, password);
-                } catch (NoSuchElementException e) { // 1.b user does not exist
-                    authService.registerUser(clientId, password);
-                    userCatalog.add(clientId);
-                    isAuthenticated = true;
+                boolean knownUser;
+                boolean isAuthenticated = false;
+                knownUser = authService.isRegisteredUser(clientId);
+                outStream.writeObject(nonce);
+                outStream.writeObject(knownUser);
+
+                if(knownUser) {
+                    //Ja registado
+                   long receivedNonce = (long) inStream.readObject();
+                   //TODO
+                    	
                 }
+                else{
+                    //Nao registado
+                    long receivedNonce = (long) inStream.readObject();
+                    //TODO
+                }
+
+                    
+
                 outStream.writeObject(isAuthenticated);
                 if (isAuthenticated) {
                     interactionLoop(outStream, inStream, clientId);

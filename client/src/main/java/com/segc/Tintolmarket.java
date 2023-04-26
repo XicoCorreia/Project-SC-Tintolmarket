@@ -90,6 +90,7 @@ public class Tintolmarket {
              ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream())) {
         	
+        	//File keyStoreFile = new File(keyStoreFilePath.replaceFirst("\\?", username)); ???
             CipherService cipherService = new CipherService(new File(keyStore), keyStorePassword.toCharArray(), config.getValue("keyStoreFormat"));
             Scanner sc = new Scanner(System.in);
 
@@ -112,7 +113,7 @@ public class Tintolmarket {
             	byte[] signedNonce = cipherService.encrypt(ByteBuffer.allocate(8).putLong(nonce).array(), config.getValue("keyStoreAlias"), keyStorePassword.toCharArray());
             	//É necessário funcao write para enviar o array de bytes???
             	outStream.writeObject(signedNonce);
-            	
+            	//É so colocar config.getValue("keyStoreAlias")?
             	Certificate publicKey = cipherService.getCertificate(config.getValue("keyStoreAlias"));
             	outStream.writeObject(publicKey);
             	
