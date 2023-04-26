@@ -2,10 +2,14 @@ package com.segc;
 
 import com.segc.exception.DuplicateElementException;
 
-import javax.security.auth.DestroyFailedException;
+import javax.crypto.*;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
-import java.security.UnrecoverableKeyException;
-import java.util.Arrays;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
 import java.util.NoSuchElementException;
 
 /**
@@ -19,11 +23,13 @@ public class AuthenticationService {
     private final CipherService cipherService;
     private final File userCredentials;
     private final char[] password;
+    private final String usersAlgorithm;
 
     public AuthenticationService(File userCredentials, char[] password, CipherService cipherService) {
         this.cipherService = cipherService;
         this.password = password;
         this.userCredentials = userCredentials;
+        this.usersAlgorithm = Configuration.getInstance().getValue("userCredentialsPBEAlgorithm");
         try {
             if (userCredentials.getParentFile().mkdirs() || userCredentials.createNewFile()) {
                 System.out.println(getClass().getSimpleName() + ": created empty user credentials file.");
@@ -48,12 +54,23 @@ public class AuthenticationService {
 
     private String decrypted(String line) {
         try {
-            //TODO: Alias
-            return Arrays.toString(cipherService.decrypt(line.getBytes(), "AES", password));
-        } catch (UnrecoverableKeyException | DestroyFailedException e) {
+            Cipher c = Cipher.getInstance(usersAlgorithm);
+            c.init(Cipher.DECRYPT_MODE, getKeyFromPassword(usersAlgorithm));
+            return new String(c.doFinal(line.getBytes()));
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException |
+                 BadPaddingException e) {
             throw new RuntimeException(e);
         }
     }
+
+    //private String decrypted(String line) {
+    //        try {
+    //            //TODO: Alias
+    //            return new String(cipherService.decrypt(line.getBytes(), "ALIAS", password));
+    //        } catch (UnrecoverableKeyException | DestroyFailedException e) {
+    //            throw new RuntimeException(e);
+    //        }
+    //    }
 
     public void registerUser(String clientId, String password) throws DuplicateElementException {
         try {
@@ -70,9 +87,30 @@ public class AuthenticationService {
 
     private String encrypted(String line) {
         try {
-            //TODO: Alias
-            return Arrays.toString(cipherService.encrypt(line.getBytes(), "AES", password));
-        } catch (UnrecoverableKeyException | DestroyFailedException e) {
+            Cipher c = Cipher.getInstance(usersAlgorithm);
+            c.init(Cipher.ENCRYPT_MODE, getKeyFromPassword(usersAlgorithm));
+            return new String(c.doFinal(line.getBytes()));
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException |
+                 BadPaddingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    //private String encrypted(String line) {
+    //        try {
+    //            //TODO: Alias
+    //            return new String(cipherService.encrypt(line.getBytes(), "ALIAS", password));
+    //        } catch (UnrecoverableKeyException | DestroyFailedException e) {
+    //            throw new RuntimeException(e);
+    //        }
+    //    }
+
+    private SecretKey getKeyFromPassword(String usersAlgorithm) {
+        try {
+            SecretKeyFactory factory = SecretKeyFactory.getInstance(usersAlgorithm);
+            KeySpec spec = new PBEKeySpec(password.toString().toCharArray());
+            return new SecretKeySpec(factory.generateSecret(spec).getEncoded(), usersAlgorithm);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new RuntimeException(e);
         }
     }
