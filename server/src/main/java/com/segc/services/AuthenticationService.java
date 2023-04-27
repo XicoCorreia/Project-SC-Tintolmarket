@@ -3,11 +3,12 @@ package com.segc.services;
 import com.segc.Configuration;
 import com.segc.exception.DuplicateElementException;
 
-import javax.crypto.*;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
-import java.security.InvalidKeyException;
+import java.security.AlgorithmParameters;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.spec.InvalidKeySpecException;
@@ -35,11 +36,20 @@ public class AuthenticationService {
     }
 
     public AuthenticationService(File userCredentials, char[] password, CipherService cipherService,
-                                 String userCredentialsAlgorithm) {
+                                 String userCredentialsPBEAlgorithm) {
+        this(userCredentials,
+                password,
+                cipherService,
+                userCredentialsPBEAlgorithm,
+                new File(Configuration.getInstance().getValue("userDecryptedCredential")));
+    }
+
+    public AuthenticationService(File userCredentials, char[] password, CipherService cipherService,
+                                 String userCredentialsAlgorithm, File decryptedUserCredentials) {
         this.cipherService = cipherService;
         this.password = password;
-        this.userCredentials = userCredentials;
         this.userCredentialsAlgorithm = userCredentialsAlgorithm;
+        this.userCredentials = decryptedUserCredentials;
         try {
             if (userCredentials.getParentFile().mkdirs() || userCredentials.createNewFile()) {
                 System.out.println(getClass().getSimpleName() + ": created empty user credentials file.");
@@ -47,6 +57,7 @@ public class AuthenticationService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        decrypted(userCredentials);
     }
 
     public boolean authenticateUser(String clientId, String password) throws NoSuchElementException {
@@ -59,7 +70,7 @@ public class AuthenticationService {
         synchronized (userCredentials) {
             try (BufferedReader usersReader = new BufferedReader(new FileReader(userCredentials))) {
                 return usersReader.lines()
-                                  .dropWhile(line -> !decrypted(line).startsWith(pattern))
+                                  .dropWhile(line -> !line.startsWith(pattern))
                                   .findFirst()
                                   .orElseThrow();
             } catch (IOException e) {
@@ -68,13 +79,14 @@ public class AuthenticationService {
         }
     }
 
-    private String decrypted(String line) {
+    //Decidir se decifra a cada uso do ficheiro ou só uma vez - no inicio
+    //Tornar void e transformar file em atributo
+    private void decrypted(File userCredentialsEncrypted) {
         try {
-            Cipher c = Cipher.getInstance(userCredentialsAlgorithm);
-            c.init(Cipher.DECRYPT_MODE, getKeyFromPassword(userCredentialsAlgorithm));
-            return new String(c.doFinal(line.getBytes()));
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException |
-                 BadPaddingException e) {
+            AlgorithmParameters ap = AlgorithmParameters.getInstance(userCredentialsAlgorithm);
+            cipherService.decrypt(new FileInputStream(userCredentialsEncrypted),
+                    new FileOutputStream(userCredentials), getKeyFromPassword(userCredentialsAlgorithm),ap);
+        } catch (NoSuchAlgorithmException | FileNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
@@ -88,7 +100,7 @@ public class AuthenticationService {
             synchronized (userCredentials) {
                 try (FileWriter fw = new FileWriter(userCredentials, true);
                      BufferedWriter bw = new BufferedWriter(fw)) {
-                    bw.write(encrypted(clientId + ":" + cert + "\n"));
+                    bw.write(clientId + ":" + cert + "\n");
                 } catch (IOException ioException) {
                     throw new RuntimeException(ioException);
                 }
@@ -96,13 +108,13 @@ public class AuthenticationService {
         }
     }
 
-    private String encrypted(String line) {
+    //TODO: when to encrypt the file?? Should we decrypt and encrypt at every usage??
+    private void encrypted(File encryptedUserCredentials) {
         try {
-            Cipher c = Cipher.getInstance(userCredentialsAlgorithm);
-            c.init(Cipher.ENCRYPT_MODE, getKeyFromPassword(userCredentialsAlgorithm));
-            return new String(c.doFinal(line.getBytes()));
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException |
-                 BadPaddingException e) {
+            AlgorithmParameters ap = AlgorithmParameters.getInstance(userCredentialsAlgorithm);
+            cipherService.encrypt(new FileInputStream(userCredentials),
+                    new FileOutputStream(encryptedUserCredentials), getKeyFromPassword(userCredentialsAlgorithm), ap);
+        } catch (NoSuchAlgorithmException | IOException e) {
             throw new RuntimeException(e);
         }
     }

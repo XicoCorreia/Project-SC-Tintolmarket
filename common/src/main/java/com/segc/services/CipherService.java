@@ -1,9 +1,6 @@
 package com.segc.services;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
+import javax.crypto.*;
 import javax.security.auth.DestroyFailedException;
 import java.io.*;
 import java.security.*;
@@ -190,6 +187,41 @@ public class CipherService {
                  BadPaddingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void decrypt(FileInputStream fis, FileOutputStream fos, Key key, AlgorithmParameters params) {
+        try {
+            Cipher cipher = Cipher.getInstance(key.getAlgorithm());
+            cipher.init(Cipher.DECRYPT_MODE, key, params);
+            cipher(fis, fos, cipher);
+        } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException |
+                 InvalidAlgorithmParameterException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void encrypt(FileInputStream fis, FileOutputStream fos, Key key, AlgorithmParameters params) {
+        try {
+            Cipher cipher = Cipher.getInstance(key.getAlgorithm());
+            cipher.init(Cipher.ENCRYPT_MODE, key, params);
+            cipher(fis, fos, cipher);
+        } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException |
+                 InvalidAlgorithmParameterException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void cipher(FileInputStream fis, FileOutputStream fos, Cipher cipher) throws IOException {
+        CipherInputStream cis = new CipherInputStream(fis, cipher);
+        byte[] b = new byte[16];
+        int i = cis.read(b);
+        while (i != -1) {
+            fos.write(b, 0, i);
+            i = cis.read(b);
+        }
+        cis.close();
+        fis.close();
+        fos.close();
     }
 
     private KeyStore initKeyStore(String keyStore, char[] keyStorePassword, String keyStoreType) {
