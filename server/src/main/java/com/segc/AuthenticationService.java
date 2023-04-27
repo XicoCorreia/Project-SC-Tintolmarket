@@ -50,10 +50,15 @@ public class AuthenticationService {
 
     private String getUserCredentials(String clientId) throws NoSuchElementException {
         String pattern = clientId + ":";
-        try (BufferedReader usersReader = new BufferedReader(new FileReader(userCredentials))) {
-            return usersReader.lines().dropWhile(line -> !decrypted(line).startsWith(pattern)).findFirst().orElseThrow();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        synchronized(userCredentials) {
+            try (BufferedReader usersReader = new BufferedReader(new FileReader(userCredentials))) {
+                return usersReader.lines()
+                                  .dropWhile(line -> !decrypted(line).startsWith(pattern))
+                                  .findFirst()
+                                  .orElseThrow();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -82,10 +87,13 @@ public class AuthenticationService {
             getUserCredentials(clientId);
             throw new DuplicateElementException();
         } catch (NoSuchElementException e) {
-            try (FileWriter fw = new FileWriter(userCredentials, true); BufferedWriter bw = new BufferedWriter(fw)) {
-                bw.write(encrypted(clientId + ":" + password + "\n"));
-            } catch (IOException ioException) {
-                throw new RuntimeException(ioException);
+            synchronized(userCredentials) {
+                try (FileWriter fw = new FileWriter(userCredentials, true);
+                     BufferedWriter bw = new BufferedWriter(fw)) {
+                    bw.write(encrypted(clientId + ":" + password + "\n"));
+                } catch (IOException ioException) {
+                    throw new RuntimeException(ioException);
+                }
             }
         }
     }
@@ -120,8 +128,8 @@ public class AuthenticationService {
         }
     }
 
-	public boolean isRegisteredUser(String clientId) {
-		// TODO Auto-generated method stub
-		return false;
-	}
+    public boolean isRegisteredUser(String clientId) {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }
