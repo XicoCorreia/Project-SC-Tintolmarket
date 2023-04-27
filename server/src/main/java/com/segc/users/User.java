@@ -1,12 +1,14 @@
 /**
  *
  */
-package com.segc;
+package com.segc.users;
 
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+
+import com.segc.Message;
 
 /**
  * @author fc54685 Francisco Correia

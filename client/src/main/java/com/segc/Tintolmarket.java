@@ -168,7 +168,7 @@ public class Tintolmarket {
                         break;
                     }
                     case TALK: {
-                        talk(outStream, c);
+                        talk(outStream, c, cipherService);
                         break;
                     }
                     case EXIT: {
@@ -250,11 +250,16 @@ public class Tintolmarket {
         outStream.writeObject(command[2]);
     }
 
-    private static void talk(ObjectOutputStream outStream, String[] command) throws IOException {
+    private static void talk(ObjectOutputStream outStream, String[] command, CipherService cipherService) throws IOException {
         if (command.length != 3) {
             System.out.println("Error in the command");
         }
-        outStream.writeObject(command[1]);
-        outStream.writeObject(command[2]);
+        String receiverId = command[1];
+        String message = command[2];
+        byte[] encryptedMessage = message.getBytes();
+        //Eu preciso da public key a partir da keystore mas depois como faço encrypt?
+        encryptedMessage = cipherService.encrypt(encryptedMessage, null);
+        outStream.writeObject(receiverId);
+        outStream.writeObject(encryptedMessage.toString());
     }
 }

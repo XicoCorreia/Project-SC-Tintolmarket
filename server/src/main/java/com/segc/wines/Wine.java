@@ -1,9 +1,12 @@
 /**
  *
  */
-package com.segc;
+package com.segc.wines;
 
 import javax.swing.*;
+
+import com.segc.users.User;
+
 import java.awt.*;
 import java.io.Serializable;
 import java.util.HashMap;

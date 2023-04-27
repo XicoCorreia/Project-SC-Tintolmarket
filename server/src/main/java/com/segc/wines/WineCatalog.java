@@ -1,6 +1,8 @@
-package com.segc;
+package com.segc.wines;
 
+import com.segc.Configuration;
 import com.segc.exception.DuplicateElementException;
+import com.segc.services.DataPersistenceService;
 
 import javax.swing.*;
 import java.nio.file.Path;

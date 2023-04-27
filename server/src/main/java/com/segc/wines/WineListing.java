@@ -1,7 +1,7 @@
 /**
  *
  */
-package com.segc;
+package com.segc.wines;
 
 import java.io.Serializable;
 

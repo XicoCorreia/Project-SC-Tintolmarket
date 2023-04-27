@@ -1,5 +1,6 @@
-package com.segc;
+package com.segc.services;
 
+import com.segc.Configuration;
 import com.segc.exception.DataIntegrityException;
 
 import java.io.*;

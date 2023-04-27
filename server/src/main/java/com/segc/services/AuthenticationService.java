@@ -1,5 +1,7 @@
-package com.segc;
+package com.segc.services;
 
+import com.segc.CipherService;
+import com.segc.Configuration;
 import com.segc.exception.DuplicateElementException;
 
 import javax.crypto.*;

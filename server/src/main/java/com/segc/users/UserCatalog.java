@@ -1,6 +1,9 @@
-package com.segc;
+package com.segc.users;
 
+import com.segc.Configuration;
+import com.segc.Message;
 import com.segc.exception.DuplicateElementException;
+import com.segc.services.DataPersistenceService;
 
 import java.nio.file.Path;
 import java.util.HashMap;

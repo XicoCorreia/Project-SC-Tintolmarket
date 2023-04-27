@@ -4,6 +4,9 @@
 package com.segc;
 
 import com.segc.exception.DuplicateElementException;
+import com.segc.services.AuthenticationService;
+import com.segc.users.UserCatalog;
+import com.segc.wines.WineCatalog;
 
 import javax.net.ServerSocketFactory;
 import javax.net.ssl.SSLServerSocket;
@@ -317,13 +320,10 @@ public class TintolmarketServer {
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             } catch (InvalidKeyException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (SignatureException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (NoSuchAlgorithmException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
         }
