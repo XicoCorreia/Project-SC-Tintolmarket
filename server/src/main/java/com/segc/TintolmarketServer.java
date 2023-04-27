@@ -11,6 +11,13 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.swing.*;
 import java.io.*;
 import java.net.Socket;
+import java.security.cert.Certificate;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.SignedObject;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
@@ -26,6 +33,7 @@ public class TintolmarketServer {
     private final WineCatalog wineCatalog;
     private final AuthenticationService authService;
     private static final Configuration config = Configuration.getInstance();
+    private static CipherService cipherService;
 
     public TintolmarketServer(int port, AuthenticationService authService) {
         this(port, new WineCatalog(), new UserCatalog(), authService);
@@ -55,7 +63,7 @@ public class TintolmarketServer {
         String keyStoreFormat = config.getValue("keyStoreFormat");
         File userCredentials = new File(config.getValue("userCredentials"));
 
-        CipherService cipherService = new CipherService(keyStoreFile, keyStorePassword, keyStoreFormat);
+        cipherService = new CipherService(keyStoreFile, keyStorePassword, keyStoreFormat);
         AuthenticationService authService = new AuthenticationService(userCredentials, password, cipherService);
 
         TintolmarketServer tms = new TintolmarketServer(port, authService);
@@ -261,7 +269,7 @@ public class TintolmarketServer {
             try {
                 ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
                 ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
-                String clientId, password;
+                String clientId;
                 Random rd = new Random();
                 long nonce = rd.nextLong();
 
@@ -270,25 +278,32 @@ public class TintolmarketServer {
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(e);
                 }
-                boolean knownUser;
+                
+                boolean knownUser = authService.isRegisteredUser(clientId);;
                 boolean isAuthenticated = false;
-                knownUser = authService.isRegisteredUser(clientId);
                 outStream.writeObject(nonce);
                 outStream.writeObject(knownUser);
-
+                
+                //Registado
                 if(knownUser) {
-                    //Ja registado
-                   long receivedNonce = (long) inStream.readObject();
-                   //TODO
-                    	
+                	SignedObject receivedNonce = (SignedObject) inStream.readObject();
+                	PublicKey clientPublicKey = authService.getPublicKey(clientId);
+                	Signature signingEngine = Signature.getInstance(clientPublicKey.getAlgorithm());
+                	if(receivedNonce.verify(clientPublicKey, signingEngine)) {
+                	   isAuthenticated = true;
+                	}   	
                 }
+                //Nao registado
                 else{
-                    //Nao registado
-                    long receivedNonce = (long) inStream.readObject();
-                    //TODO
+                	SignedObject receivedNonce = (SignedObject) inStream.readObject();
+                    Certificate cert = (Certificate) inStream.readObject();
+                    PublicKey clientPublicKey = cert.getPublicKey();
+                	Signature signingEngine = Signature.getInstance(clientPublicKey.getAlgorithm());
+                    if(receivedNonce.verify(clientPublicKey, signingEngine)) {
+                    //Inserir  <clientID>:<chave pública>
+                 	   isAuthenticated = true;
+                    }
                 }
-
-                    
 
                 outStream.writeObject(isAuthenticated);
                 if (isAuthenticated) {
@@ -301,7 +316,16 @@ public class TintolmarketServer {
 
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
-            }
+            } catch (InvalidKeyException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (SignatureException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (NoSuchAlgorithmException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
         }
     }
 }

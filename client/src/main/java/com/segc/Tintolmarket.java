@@ -13,6 +13,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Scanner;
+import java.security.PrivateKey;
+import java.security.Signature;
+import java.security.SignedObject;
 import java.security.cert.Certificate;
 
 import javax.net.SocketFactory;
@@ -93,8 +96,8 @@ public class Tintolmarket {
              ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream())) {
         	
-        	//File keyStoreFile = new File(keyStoreFilePath.replaceFirst("\\?", username)); ???
-            CipherService cipherService = new CipherService(new File(keyStore), keyStorePassword.toCharArray(), config.getValue("keyStoreFormat"));
+        	File keyStoreFile = new File(keyStore.replaceFirst("\\?", user));
+            CipherService cipherService = new CipherService(keyStoreFile, keyStorePassword.toCharArray(), config.getValue("keyStoreFormat"));
             Scanner sc = new Scanner(System.in);
 
             outStream.writeObject(user);
@@ -103,8 +106,11 @@ public class Tintolmarket {
             boolean known =  (Boolean) inStream.readObject();
             
             if(known) {
-            	byte[] signedNonce = cipherService.encrypt(ByteBuffer.allocate(8).putLong(nonce).array(), config.getValue("keyStoreAlias"), keyStorePassword.toCharArray());
-            	//É necessário funcao write para enviar o array de bytes???
+            	//É DSA?
+            	Signature signingEngine = Signature.getInstance("DSA");
+            	PrivateKey pk = (PrivateKey) cipherService.getKey(config.getValue("keyStoreAlias"),keyStorePassword.toCharArray()); 
+            	signingEngine.initSign(pk);
+            	SignedObject signedNonce = new SignedObject(nonce, pk, signingEngine);
             	outStream.writeObject(signedNonce);
             	
             	if(!inStream.readBoolean()) {
@@ -113,11 +119,11 @@ public class Tintolmarket {
             	}
             }
             else {
-            	byte[] signedNonce = cipherService.encrypt(ByteBuffer.allocate(8).putLong(nonce).array(), config.getValue("keyStoreAlias"), keyStorePassword.toCharArray());
-            	//É necessário funcao write para enviar o array de bytes???
-            	outStream.writeObject(signedNonce);
-            	//É so colocar config.getValue("keyStoreAlias")?
+            	PrivateKey pk = (PrivateKey) cipherService.getKey(config.getValue("keyStoreAlias"),keyStorePassword.toCharArray()); 
+            	Signature signingEngine = Signature.getInstance(pk.getAlgorithm());
+            	SignedObject signedNonce = new SignedObject(nonce, pk, signingEngine);
             	Certificate publicKey = cipherService.getCertificate(config.getValue("keyStoreAlias"));
+            	outStream.writeObject(signedNonce);
             	outStream.writeObject(publicKey);
             	
             	if(!inStream.readBoolean()) {

@@ -8,6 +8,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.NoSuchElementException;
@@ -123,5 +124,10 @@ public class AuthenticationService {
 	public boolean isRegisteredUser(String clientId) {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	public PublicKey getPublicKey(String clientId) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

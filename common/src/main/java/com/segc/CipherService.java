@@ -127,7 +127,7 @@ public class CipherService {
         }
     }
 
-    private Key getKey(String alias, char[] password) throws UnrecoverableKeyException {
+    public Key getKey(String alias, char[] password) throws UnrecoverableKeyException {
         try {
             return ks.getKey(alias, password);
         } catch (KeyStoreException | NoSuchAlgorithmException e) {
