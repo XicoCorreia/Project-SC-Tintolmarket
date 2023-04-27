@@ -1,8 +1,6 @@
 package com.segc.services;
 
 import com.segc.exception.DataIntegrityException;
-import com.segc.services.CipherService;
-import com.segc.services.DataPersistenceService;
 import com.segc.transaction.Transaction;
 
 import java.io.IOException;

@@ -91,16 +91,15 @@ public class Tintolmarket {
         System.setProperty("javax.net.ssl.trustStorePassword", config.getValue("trustStorePassword"));
         System.setProperty("javax.net.ssl.trustStoreType", config.getValue("trustStoreType"));
 
+        String signatureAlgorithm = config.getValue("signatureAlgorithm");
+        CipherService cipherService = new CipherService(user, signatureAlgorithm);
+
         SocketFactory sf = SSLSocketFactory.getDefault();
         try (SSLSocket socket = (SSLSocket) sf.createSocket(host, port);
              ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream())) {
 
-            CipherService cipherService = new CipherService(
-                    config.getValue("keyStoreAlias"),
-                    config.getValue("signatureAlgorithm"));
             Scanner sc = new Scanner(System.in);
-
             outStream.writeObject(user);
 
             long nonce = (Long) inStream.readObject();
@@ -180,7 +179,6 @@ public class Tintolmarket {
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     private static void add(ObjectOutputStream outStream, String[] command, Scanner sc) throws IOException {
