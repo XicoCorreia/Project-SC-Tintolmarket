@@ -132,7 +132,7 @@ public class TintolmarketServer {
         return userCatalog.getBalance(clientId);
     }
 
-    public void talk(String recipient, String message, String sender) throws NoSuchElementException {
+    public void talk(String recipient, byte[] message, String sender) throws NoSuchElementException {
         userCatalog.talk(sender, recipient, message);
     }
 
@@ -238,7 +238,7 @@ public class TintolmarketServer {
                 }
                 case TALK: {
                     String recipientId = (String) inStream.readObject();
-                    String message = (String) inStream.readObject();
+                    byte[] message = (byte[]) inStream.readObject();
                     try {
                         talk(recipientId, message, clientId);
                         outStream.writeObject(Opcode.OK);
@@ -253,7 +253,7 @@ public class TintolmarketServer {
                     try {
                         Message m = read(clientId);
                         outStream.writeObject(Opcode.OK);
-                        outStream.writeObject(m.toString());
+                        outStream.writeObject(m);
                     } catch (Exception e) {
                         outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("No messages to read.");
