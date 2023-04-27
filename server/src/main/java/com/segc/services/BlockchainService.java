@@ -3,6 +3,7 @@ package com.segc.services;
 import com.segc.exception.DataIntegrityException;
 import com.segc.transaction.Transaction;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
@@ -10,8 +11,7 @@ import java.security.InvalidKeyException;
 import java.security.SignatureException;
 import java.security.SignedObject;
 import java.text.DecimalFormat;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author fc54685 Francisco Correia
@@ -25,6 +25,7 @@ public class BlockchainService {
      */
     public static final String PREFIX = "block_";
     public static final String EXTENSION = ".blk";
+    public static final String PART_EXTENSION = ".part";
 
     /**
      * Left-pads the block ID in the block filename.
@@ -35,7 +36,7 @@ public class BlockchainService {
     private final CipherService cipherService;
     private final DataPersistenceService dps;
     private final String blockchainDir;
-    private final List<SignedObject> signedBlocks;
+    private List<SignedObject> signedBlocks;
     private Block block;
 
     public BlockchainService(String blockchainDir,
@@ -44,30 +45,97 @@ public class BlockchainService {
         this.cipherService = cipherService;
         this.dps = dps;
         this.blockchainDir = blockchainDir;
-        this.signedBlocks = new LinkedList<>();
         try {
             initBlockchain();
-        } catch (SignatureException | InvalidKeyException | DataIntegrityException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void initBlockchain() throws DataIntegrityException, SignatureException, InvalidKeyException {
-        for (SignedObject signedBlock : dps.getObjects(SignedObject.class, blockchainDir)) {
-            if (cipherService.verify(signedBlock)) {
-                signedBlocks.add(signedBlock);
-            } else {
-                throw new DataIntegrityException("The integrity of block " + block.blockId + " is compromised.");
-            }
+    private void initBlockchain() throws
+            DataIntegrityException,
+            SignatureException,
+            InvalidKeyException,
+            IOException,
+            ClassNotFoundException {
+        try {
+            signedBlocks = dps.getObjects(SignedObject.class, blockchainDir, f -> f.getName().endsWith(EXTENSION));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
         }
-        if (!signedBlocks.isEmpty()) {
-            this.block = dps.getObjects(Block.class, Path.of(blockchainDir, "part").toString()).get(0);
+        String previousDigest;
+        long blockId;
+        if (signedBlocks.isEmpty()) {
+            previousDigest = String.format("%08d", 0);
+            blockId = 1;
         } else {
-            this.block = new Block(String.format("%08d", 0), 1, new LinkedList<>());
-            String suffix = SUFFIX_FORMATTER.format(block.blockId);
-            Path filePath = Path.of(blockchainDir, "part", PREFIX + suffix + EXTENSION);
-            dps.putObject(this.block, filePath);
+            SignedObject lastSignedBlock = signedBlocks.get(signedBlocks.size() - 1);
+            Block lastBlock = (Block) lastSignedBlock.getObject();
+            previousDigest = dps.getDigestAsHexString(signedBlocks.get(signedBlocks.size() - 1));
+            blockId = lastBlock.blockId + 1;
         }
+
+        String suffix = SUFFIX_FORMATTER.format(blockId); // bloco parcial tem o id n+1
+        Path filePath = Path.of(blockchainDir, PREFIX + suffix + PART_EXTENSION);
+        try {
+            this.block = dps.getObjects(Block.class, blockchainDir, f -> f.getName().endsWith(PART_EXTENSION)).get(0);
+        } catch (IndexOutOfBoundsException | FileNotFoundException e) {
+            this.block = new Block(previousDigest, blockId, new LinkedList<>());
+        }
+        verifyBlockchain();
+        dps.putObject(this.block, filePath);
+    }
+
+    private void verifyBlockchain() throws
+            DataIntegrityException,
+            SignatureException,
+            InvalidKeyException,
+            IOException,
+            ClassNotFoundException {
+        if (signedBlocks.size() == 0) {
+            return;
+        }
+
+        Iterator<SignedObject> iter = signedBlocks.iterator();
+        SignedObject prev = iter.next();
+        if (!cipherService.verify(prev)) {
+            throw new DataIntegrityException("The integrity of block " + block.blockId + " is compromised.");
+        }
+
+        SignedObject next;
+        Block nextBlock;
+        long expectedBlockId = 1L;
+        do {
+            if (iter.hasNext()) {
+                next = iter.next();
+                if (!cipherService.verify(next)) {
+                    throw new DataIntegrityException("The integrity of block " + block.blockId + " is compromised.");
+                }
+                nextBlock = (Block) next.getObject();
+            } else {
+                next = null;
+                nextBlock = this.block; // verificamos se o bloco parcial aponta para o último bloco assinado
+            }
+
+            String actualDigest = dps.getDigestAsHexString(prev);
+            Block prevBlock = (Block) Objects.requireNonNull(prev).getObject();
+            if (prevBlock.blockId != expectedBlockId) {
+                String message = String.format("Expected block id %d, got %d.", expectedBlockId, prevBlock.blockId);
+                throw new DataIntegrityException(message);
+            }
+
+            String expectedDigest = nextBlock.previousDigest;
+            if (!Objects.equals(actualDigest, expectedDigest)) {
+                String message = String.format("At block %d: expected digest %s for previous block %d, got %s.",
+                        nextBlock.blockId,
+                        expectedDigest,
+                        prevBlock.blockId,
+                        actualDigest);
+                throw new DataIntegrityException(message);
+            }
+            prev = next;
+            expectedBlockId++;
+        } while (next != null);
     }
 
     public void addTransaction(Transaction t) {
@@ -76,9 +144,12 @@ public class BlockchainService {
         } else {
             SignedObject signedBlock = cipherService.sign(block);
             String suffix = SUFFIX_FORMATTER.format(block.blockId);
-            Path filePath = Path.of(blockchainDir, "part", PREFIX + suffix + EXTENSION);
-            Path newFilePath = Path.of(blockchainDir, PREFIX + suffix + EXTENSION);
-            if (!dps.putObject(signedBlock, filePath, newFilePath)) {
+
+            String blockName = PREFIX + suffix;
+            Path oldFilePath = Path.of(blockchainDir, blockName + PART_EXTENSION);
+            Path newFilePath = Path.of(blockchainDir, blockName + EXTENSION);
+
+            if (!dps.putObject(signedBlock, oldFilePath, newFilePath)) {
                 throw new DataIntegrityException("Could not rename partial block file");
             }
             signedBlocks.add(signedBlock);
@@ -86,7 +157,7 @@ public class BlockchainService {
             block.addTransaction(t);
         }
         String suffix = SUFFIX_FORMATTER.format(block.blockId);
-        Path filePath = Path.of(blockchainDir, "part", PREFIX + suffix + EXTENSION);
+        Path filePath = Path.of(blockchainDir, PREFIX + suffix + PART_EXTENSION);
         dps.putObject(block, filePath);
     }
 
@@ -143,6 +214,5 @@ public class BlockchainService {
             this.transactions.add(t);
             numTransactions++;
         }
-
     }
 }

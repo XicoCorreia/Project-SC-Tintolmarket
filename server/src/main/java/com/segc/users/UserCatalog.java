@@ -5,6 +5,7 @@ import com.segc.Message;
 import com.segc.exception.DuplicateElementException;
 import com.segc.services.DataPersistenceService;
 
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,7 +26,11 @@ public class UserCatalog {
         this.users = new HashMap<>();
         this.dps = dps;
         this.userDataDir = Configuration.getInstance().getValue("userDataDir");
-        dps.getObjectsAndVerify(User.class, userDataDir).forEach(user -> users.put(user.getId(), user));
+        try {
+            dps.getObjectsAndVerify(User.class, userDataDir).forEach(user -> users.put(user.getId(), user));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void add(String clientId) throws DuplicateElementException {

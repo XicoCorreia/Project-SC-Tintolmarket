@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
  * @author fc54685 Francisco Correia
@@ -30,18 +31,20 @@ public final class DataPersistenceService {
     }
 
     @SuppressWarnings({"unchecked", "unused"})
-    public <T extends Serializable> T getObject(Class<T> clazz, String fileName) {
+    public <T extends Serializable> T getObject(Class<T> clazz, String fileName) throws FileNotFoundException {
         synchronized (fileName) {
             try (FileInputStream fin = new FileInputStream(fileName);
                  ObjectInputStream in = new ObjectInputStream(fin)) {
                 return (T) in.readObject();
+            } catch (FileNotFoundException e) {
+                throw e;
             } catch (IOException | ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
         }
     }
 
-    public <T extends Serializable> T getObject(Class<T> clazz, Path filePath) {
+    public <T extends Serializable> T getObject(Class<T> clazz, Path filePath) throws FileNotFoundException {
         return getObject(clazz, filePath.toString());
     }
 
@@ -86,15 +89,23 @@ public final class DataPersistenceService {
         putObjectAndDigest(obj, filePath.toString());
     }
 
-    public <T extends Serializable> List<T> getObjects(Class<T> clazz, String directoryName) {
+    public <T extends Serializable> List<T> getObjects(Class<T> clazz, String directoryName)
+            throws FileNotFoundException {
+        return getObjects(clazz, directoryName, p -> true);
+    }
+
+    public <T extends Serializable> List<T> getObjects(Class<T> clazz,
+                                                       String directoryName,
+                                                       Predicate<File> pred) throws FileNotFoundException {
         List<T> list = new LinkedList<>();
         File dir = new File(directoryName);
         if (dir.mkdirs()) {
             System.out.println("Created directory: " + dir.getAbsolutePath());
         }
         for (File file : Objects.requireNonNull(dir.listFiles())) {
-            if (file.isFile()) {
-                list.add(getObject(clazz, file.toPath()));
+            if (pred.test(file)) {
+                T obj = getObject(clazz, file.toPath());
+                list.add(obj);
             }
         }
         return list;
@@ -102,7 +113,7 @@ public final class DataPersistenceService {
 
     public <T extends Serializable> List<T> getObjectsAndVerify(Class<T> clazz,
                                                                 String directoryName)
-            throws DataIntegrityException {
+            throws DataIntegrityException, FileNotFoundException {
         List<T> list = new LinkedList<>();
         File dir = new File(directoryName);
         if (dir.mkdirs()) {
@@ -117,7 +128,6 @@ public final class DataPersistenceService {
                 throw new DataIntegrityException(message);
             }
             list.add(obj);
-            list.add(getObject(clazz, filePath));
         }
         return list;
     }
