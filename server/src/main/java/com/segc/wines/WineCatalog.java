@@ -5,6 +5,7 @@ import com.segc.exception.DuplicateElementException;
 import com.segc.services.DataPersistenceService;
 
 import javax.swing.*;
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -16,14 +17,18 @@ import java.util.*;
 public class WineCatalog {
     public final String wineDataDir;
     private final Map<String, Wine> wines;
-    private final DataPersistenceService<Wine> dps;
+    private final DataPersistenceService dps;
 
-    public WineCatalog() {
+    public WineCatalog(DataPersistenceService dps) {
         Configuration config = Configuration.getInstance();
         this.wines = new HashMap<>();
-        this.dps = new DataPersistenceService<>(config.getValue("digestAlgorithm"));
+        this.dps = dps;
         this.wineDataDir = config.getValue("wineDataDir");
-        dps.getObjects(wineDataDir).forEach(wine -> wines.put(wine.getName(), wine));
+        try {
+            dps.getObjectsAndVerify(Wine.class, wineDataDir).forEach(wine -> wines.put(wine.getName(), wine));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void add(String wineName, ImageIcon label) throws DuplicateElementException {

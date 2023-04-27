@@ -3,20 +3,17 @@
  */
 package com.segc;
 
-import java.io.File;
+import com.segc.services.CipherService;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Scanner;
-import java.security.PrivateKey;
-import java.security.Signature;
 import java.security.SignedObject;
-import java.security.cert.Certificate;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocket;
@@ -65,13 +62,13 @@ public class Tintolmarket {
             "- read%n" +
             "- quit%n");
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         if (args.length < 4) {
             System.out.printf("Invalid arguments.%n" +
                     "Use: java -jar Tintolmarket.jar  <serverAddress> <truststore> <keystore> <password-keystore> <userID>%n");
             System.exit(1);
         }
-        
+
         Configuration config = Configuration.getInstance();
         String serverAddress = args[0];
         String trustStore = args[1];
@@ -86,53 +83,38 @@ public class Tintolmarket {
             host = hostPort[0];
             port = Integer.parseInt(hostPort[1]);
         }
-        
+        System.setProperty("javax.net.ssl.keyStore", keyStore);
+        System.setProperty("javax.net.ssl.keyStorePassword", keyStorePassword);
+        System.setProperty("javax.net.ssl.keyStoreType", config.getValue("keyStoreType"));
+
         System.setProperty("javax.net.ssl.trustStore", trustStore);
-    	System.setProperty("javax.net.ssl.trustStorePassword", config.getValue("trustStorePassword"));
+        System.setProperty("javax.net.ssl.trustStorePassword", config.getValue("trustStorePassword"));
+        System.setProperty("javax.net.ssl.trustStoreType", config.getValue("trustStoreType"));
+
+        String signatureAlgorithm = config.getValue("signatureAlgorithm");
+        CipherService cipherService = new CipherService(user, signatureAlgorithm);
+
         SocketFactory sf = SSLSocketFactory.getDefault();
-
-
         try (SSLSocket socket = (SSLSocket) sf.createSocket(host, port);
              ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
              ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream())) {
-        	
-        	File keyStoreFile = new File(keyStore.replaceFirst("\\?", user));
-            CipherService cipherService = new CipherService(keyStoreFile, keyStorePassword.toCharArray(), config.getValue("keyStoreFormat"));
-            Scanner sc = new Scanner(System.in);
 
+            Scanner sc = new Scanner(System.in);
             outStream.writeObject(user);
-            
+
             long nonce = (Long) inStream.readObject();
-            boolean known =  (Boolean) inStream.readObject();
-            
-            if(known) {
-            	//É DSA?
-            	Signature signingEngine = Signature.getInstance("DSA");
-            	PrivateKey pk = (PrivateKey) cipherService.getKey(config.getValue("keyStoreAlias"),keyStorePassword.toCharArray()); 
-            	signingEngine.initSign(pk);
-            	SignedObject signedNonce = new SignedObject(nonce, pk, signingEngine);
-            	outStream.writeObject(signedNonce);
-            	
-            	if(!inStream.readBoolean()) {
-            		System.out.println("Authentication failed.");
-            		System.exit(1);
-            	}
+            boolean isRegistered = (Boolean) inStream.readObject();
+
+            SignedObject signedNonce = cipherService.sign(nonce);
+            outStream.writeObject(signedNonce);
+            if (!isRegistered) {
+                outStream.writeObject(cipherService.getCertificate().getPublicKey());
             }
-            else {
-            	PrivateKey pk = (PrivateKey) cipherService.getKey(config.getValue("keyStoreAlias"),keyStorePassword.toCharArray()); 
-            	Signature signingEngine = Signature.getInstance(pk.getAlgorithm());
-            	SignedObject signedNonce = new SignedObject(nonce, pk, signingEngine);
-            	Certificate publicKey = cipherService.getCertificate(config.getValue("keyStoreAlias"));
-            	outStream.writeObject(signedNonce);
-            	outStream.writeObject(publicKey);
-            	
-            	if(!inStream.readBoolean()) {
-            		System.out.println("Authentication failed.");
-            		System.exit(1);
-            	}
+            if (!inStream.readBoolean()) {
+                System.out.println("Authentication failed.");
+                System.exit(1);
             }
-             
-              
+
 
             System.out.printf("Authenticated.%n%s%n", COMMANDS);
             boolean isExiting = false;
@@ -197,7 +179,6 @@ public class Tintolmarket {
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     private static void add(ObjectOutputStream outStream, String[] command, Scanner sc) throws IOException {
@@ -250,16 +231,17 @@ public class Tintolmarket {
         outStream.writeObject(command[2]);
     }
 
-    private static void talk(ObjectOutputStream outStream, String[] command, CipherService cipherService) throws IOException {
+    private static void talk(ObjectOutputStream outStream, String[] command, CipherService cipherService)
+            throws IOException {
         if (command.length != 3) {
             System.out.println("Error in the command");
         }
         String receiverId = command[1];
         String message = command[2];
         byte[] encryptedMessage = message.getBytes();
-        //Eu preciso da public key a partir da keystore mas depois como faço encrypt?
+        // TODO: Eu preciso da public key a partir da keystore, mas depois como faço encrypt?
         encryptedMessage = cipherService.encrypt(encryptedMessage, null);
         outStream.writeObject(receiverId);
-        outStream.writeObject(encryptedMessage.toString());
+        outStream.writeObject(encryptedMessage);
     }
 }

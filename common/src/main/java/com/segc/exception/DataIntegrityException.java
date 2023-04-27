@@ -5,7 +5,7 @@ package com.segc.exception;
  * @author fc55955 Alexandre Fonseca
  * @author fc56272 Filipe Egipto
  */
-public class DataIntegrityException extends Exception {
+public class DataIntegrityException extends RuntimeException {
     private static final long serialVersionUID = 1820538674530978702L;
 
     public DataIntegrityException(String message) {

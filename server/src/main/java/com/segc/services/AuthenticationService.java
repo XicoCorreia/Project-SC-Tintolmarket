@@ -1,6 +1,5 @@
 package com.segc.services;
 
-import com.segc.CipherService;
 import com.segc.Configuration;
 import com.segc.exception.DuplicateElementException;
 
@@ -10,7 +9,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
+import java.security.cert.Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.NoSuchElementException;
@@ -29,7 +28,10 @@ public class AuthenticationService {
     private final String userCredentialsAlgorithm;
 
     public AuthenticationService(File userCredentials, char[] password, CipherService cipherService) {
-        this(userCredentials, password, cipherService, Configuration.getInstance().getValue("userCredentialsPBEAlgorithm"));
+        this(userCredentials,
+                password,
+                cipherService,
+                Configuration.getInstance().getValue("userCredentialsPBEAlgorithm"));
     }
 
     public AuthenticationService(File userCredentials, char[] password, CipherService cipherService,
@@ -52,8 +54,9 @@ public class AuthenticationService {
     }
 
     private String getUserCredentials(String clientId) throws NoSuchElementException {
+        // TODO: decrypt entire file and then read lines
         String pattern = clientId + ":";
-        synchronized(userCredentials) {
+        synchronized (userCredentials) {
             try (BufferedReader usersReader = new BufferedReader(new FileReader(userCredentials))) {
                 return usersReader.lines()
                                   .dropWhile(line -> !decrypted(line).startsWith(pattern))
@@ -76,24 +79,16 @@ public class AuthenticationService {
         }
     }
 
-    //private String decrypted(String line) {
-    //        try {
-    //            //TODO: Alias
-    //            return new String(cipherService.decrypt(line.getBytes(), "ALIAS", password));
-    //        } catch (UnrecoverableKeyException | DestroyFailedException e) {
-    //            throw new RuntimeException(e);
-    //        }
-    //    }
-
-    public void registerUser(String clientId, String password) throws DuplicateElementException {
+    public void registerUser(String clientId, Certificate cert) throws DuplicateElementException {
+        // TODO: store cert instead of writing password
         try {
             getUserCredentials(clientId);
             throw new DuplicateElementException();
         } catch (NoSuchElementException e) {
-            synchronized(userCredentials) {
+            synchronized (userCredentials) {
                 try (FileWriter fw = new FileWriter(userCredentials, true);
                      BufferedWriter bw = new BufferedWriter(fw)) {
-                    bw.write(encrypted(clientId + ":" + password + "\n"));
+                    bw.write(encrypted(clientId + ":" + cert + "\n"));
                 } catch (IOException ioException) {
                     throw new RuntimeException(ioException);
                 }
@@ -112,32 +107,23 @@ public class AuthenticationService {
         }
     }
 
-    //private String encrypted(String line) {
-    //        try {
-    //            //TODO: Alias
-    //            return new String(cipherService.encrypt(line.getBytes(), "ALIAS", password));
-    //        } catch (UnrecoverableKeyException | DestroyFailedException e) {
-    //            throw new RuntimeException(e);
-    //        }
-    //    }
-
     private SecretKey getKeyFromPassword(String usersAlgorithm) {
         try {
             SecretKeyFactory factory = SecretKeyFactory.getInstance(usersAlgorithm);
-            KeySpec spec = new PBEKeySpec(password.toString().toCharArray());
+            KeySpec spec = new PBEKeySpec(password);
             return new SecretKeySpec(factory.generateSecret(spec).getEncoded(), usersAlgorithm);
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new RuntimeException(e);
         }
     }
-    
-	public boolean isRegisteredUser(String clientId) {
-		// TODO Auto-generated method stub
-		return false;
-	}
 
-	public PublicKey getPublicKey(String clientId) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    public boolean isRegisteredUser(String clientId) {
+        // TODO: check if user already exists
+        return false;
+    }
+
+    public Certificate getCertificate(String clientId) {
+        // TODO: get certificate
+        return null;
+    }
 }
