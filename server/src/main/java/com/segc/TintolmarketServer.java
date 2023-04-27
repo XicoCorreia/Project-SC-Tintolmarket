@@ -5,6 +5,10 @@ package com.segc;
 
 import com.segc.exception.DuplicateElementException;
 import com.segc.services.AuthenticationService;
+import com.segc.services.BlockchainService;
+import com.segc.services.CipherService;
+import com.segc.services.DataPersistenceService;
+import com.segc.transaction.Transaction;
 import com.segc.users.UserCatalog;
 import com.segc.wines.WineCatalog;
 
@@ -14,15 +18,10 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.swing.*;
 import java.io.*;
 import java.net.Socket;
+import java.security.*;
 import java.security.cert.Certificate;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.SignedObject;
+import java.util.LinkedList;
 import java.util.NoSuchElementException;
-import java.util.Random;
 
 /**
  * @author fc54685 Francisco Correia
@@ -30,26 +29,36 @@ import java.util.Random;
  * @author fc56272 Filipe Egipto
  */
 public class TintolmarketServer {
+    private static final Configuration config = Configuration.getInstance();
+    private static final SecureRandom rd = new SecureRandom();
     private static final int DEFAULT_PORT = 12345;
     private final int port;
     private final UserCatalog userCatalog;
     private final WineCatalog wineCatalog;
     private final AuthenticationService authService;
-    private static final Configuration config = Configuration.getInstance();
-    private static CipherService cipherService;
+    private final CipherService cipherService;
+    private final BlockchainService blockchainService;
 
-    public TintolmarketServer(int port, AuthenticationService authService) {
-        this(port, new WineCatalog(), new UserCatalog(), authService);
+    public TintolmarketServer(int port,
+                              AuthenticationService authService,
+                              CipherService cipherService,
+                              BlockchainService blockchainService,
+                              DataPersistenceService dps) {
+        this(port, new WineCatalog(dps), new UserCatalog(dps), authService, cipherService, blockchainService);
     }
 
     public TintolmarketServer(int port,
                               WineCatalog wineCatalog,
                               UserCatalog userCatalog,
-                              AuthenticationService authService) {
+                              AuthenticationService authService,
+                              CipherService cipherService,
+                              BlockchainService blockchainService) {
         this.port = port;
         this.wineCatalog = wineCatalog;
         this.userCatalog = userCatalog;
         this.authService = authService;
+        this.cipherService = cipherService;
+        this.blockchainService = blockchainService;
     }
 
     public static void main(String[] args) {
@@ -60,26 +69,29 @@ public class TintolmarketServer {
             port = Integer.parseInt(args[0]);
         }
         char[] password = args[1].toCharArray();
-        File keyStoreFile = new File(args[2]);
-        char[] keyStorePassword = args[3].toCharArray();
+        String keyStore = args[2];
+        String keyStorePassword = args[3];
 
-        String keyStoreFormat = config.getValue("keyStoreFormat");
         File userCredentials = new File(config.getValue("userCredentials"));
+        String signatureAlgorithm = config.getValue("signatureAlgorithm");
+        String blockchainDir = config.getValue("blockchainDir");
 
-        cipherService = new CipherService(keyStoreFile, keyStorePassword, keyStoreFormat);
+        System.setProperty("javax.net.ssl.keyStore", keyStore);
+        System.setProperty("javax.net.ssl.keyStorePassword", keyStorePassword);
+        System.setProperty("javax.net.ssl.keyStoreType", config.getValue("keyStoreType"));
+
+        CipherService cipherService = new CipherService(config.getValue("keyStoreAlias"), signatureAlgorithm);
         AuthenticationService authService = new AuthenticationService(userCredentials, password, cipherService);
 
-        TintolmarketServer tms = new TintolmarketServer(port, authService);
-        
-    	System.setProperty("javax.net.ssl.keyStore", keyStoreFile.getAbsolutePath());
-    	System.setProperty("javax.net.ssl.keyStorePassword", keyStorePassword.toString());
-    	
+        DataPersistenceService dps = new DataPersistenceService();
+        BlockchainService blockchainService = new BlockchainService(blockchainDir, cipherService, dps);
+        TintolmarketServer tms = new TintolmarketServer(port, authService, cipherService, blockchainService, dps);
         tms.startServer();
     }
 
     public void startServer() {
 
-    	ServerSocketFactory ssf = SSLServerSocketFactory.getDefault();
+        ServerSocketFactory ssf = SSLServerSocketFactory.getDefault();
         try (SSLServerSocket sSoc = (SSLServerSocket) ssf.createServerSocket(this.port)) {
             while (true) {
                 try {
@@ -136,9 +148,8 @@ public class TintolmarketServer {
         wineCatalog.classify(wineName, stars);
     }
 
-    public String list() {
-        
-        return "";
+    public LinkedList<Transaction> list() {
+        return blockchainService.getTransactions();
     }
 
     private void interactionLoop(ObjectOutputStream outStream, ObjectInputStream inStream, String clientId)
@@ -250,9 +261,9 @@ public class TintolmarketServer {
                     break;
                 }
                 case LIST: {
-                    String s = list();
+                    LinkedList<Transaction> transactions = new LinkedList<>();
                     outStream.writeObject(Opcode.OK);
-                    outStream.writeObject(s);
+                    outStream.writeObject(transactions);
                 }
                 case EXIT: {
                     isExiting = true;
@@ -279,39 +290,26 @@ public class TintolmarketServer {
                 ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
                 ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
                 String clientId;
-                Random rd = new Random();
-                long nonce = rd.nextLong();
+                Long nonce = rd.nextLong();
 
-                try {
-                    clientId = (String) inStream.readObject();
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-                
-                boolean knownUser = authService.isRegisteredUser(clientId);;
+                clientId = (String) inStream.readObject();
+
+                boolean isRegistered = authService.isRegisteredUser(clientId);
                 boolean isAuthenticated = false;
+
                 outStream.writeObject(nonce);
-                outStream.writeObject(knownUser);
-                
-                //Registado
-                if(knownUser) {
-                	SignedObject receivedNonce = (SignedObject) inStream.readObject();
-                	PublicKey clientPublicKey = authService.getPublicKey(clientId);
-                	Signature signingEngine = Signature.getInstance(clientPublicKey.getAlgorithm());
-                	if(receivedNonce.verify(clientPublicKey, signingEngine)) {
-                	   isAuthenticated = true;
-                	}   	
+                outStream.writeObject(isRegistered);
+
+                SignedObject receivedNonce = (SignedObject) inStream.readObject();
+                Certificate cert = isRegistered ? authService.getCertificate(clientId) // utilizador existente
+                                                : (Certificate) inStream.readObject(); // novo utilizador
+
+                if (cipherService.verify(receivedNonce, cert)) {
+                    isAuthenticated = true;
                 }
-                //Nao registado
-                else{
-                	SignedObject receivedNonce = (SignedObject) inStream.readObject();
-                    Certificate cert = (Certificate) inStream.readObject();
-                    PublicKey clientPublicKey = cert.getPublicKey();
-                	Signature signingEngine = Signature.getInstance(clientPublicKey.getAlgorithm());
-                    if(receivedNonce.verify(clientPublicKey, signingEngine)) {
-                    //Inserir  <clientID>:<chave pública>
-                 	   isAuthenticated = true;
-                    }
+
+                if (!isRegistered) {
+                    authService.registerUser(clientId, cert);
                 }
 
                 outStream.writeObject(isAuthenticated);
@@ -322,16 +320,9 @@ public class TintolmarketServer {
                 }
                 socket.shutdownOutput();
                 socket.close();
-
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (InvalidKeyException e) {
-				e.printStackTrace();
-			} catch (SignatureException e) {
-				e.printStackTrace();
-			} catch (NoSuchAlgorithmException e) {
-				e.printStackTrace();
-			}
+            } catch (IOException | ClassNotFoundException | InvalidKeyException | SignatureException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

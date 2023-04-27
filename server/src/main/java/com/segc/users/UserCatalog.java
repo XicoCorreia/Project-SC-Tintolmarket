@@ -19,13 +19,13 @@ import java.util.Optional;
 public class UserCatalog {
     public final String userDataDir;
     private final Map<String, User> users;
-    private final DataPersistenceService<User> dps;
+    private final DataPersistenceService dps;
 
-    public UserCatalog() {
+    public UserCatalog(DataPersistenceService dps) {
         this.users = new HashMap<>();
-        this.dps = new DataPersistenceService<>();
+        this.dps = dps;
         this.userDataDir = Configuration.getInstance().getValue("userDataDir");
-        dps.getObjects(userDataDir).forEach(user -> users.put(user.getId(), user));
+        dps.getObjectsAndVerify(User.class, userDataDir).forEach(user -> users.put(user.getId(), user));
     }
 
     public void add(String clientId) throws DuplicateElementException {
