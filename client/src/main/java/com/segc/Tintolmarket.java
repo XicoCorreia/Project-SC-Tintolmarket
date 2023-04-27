@@ -60,7 +60,7 @@ public class Tintolmarket {
             "- talk <user> <message>%n" +
             "- list%n" +
             "- read%n" +
-            "- quit%n");
+            "- quit%n" );
 
     public static void main(String[] args) {
         if (args.length < 4) {
@@ -108,7 +108,7 @@ public class Tintolmarket {
             SignedObject signedNonce = cipherService.sign(nonce);
             outStream.writeObject(signedNonce);
             if (!isRegistered) {
-                outStream.writeObject(cipherService.getCertificate().getPublicKey());
+                outStream.writeObject(cipherService.getCertificate());
             }
             if (!inStream.readBoolean()) {
                 System.out.println("Authentication failed.");
@@ -167,11 +167,22 @@ public class Tintolmarket {
                     }
                 }
                 Opcode status = (Opcode) inStream.readObject();
+                
+                
                 String response = (String) inStream.readObject();
                 if (status == Opcode.ERROR) {
                     System.err.println(response);
                 } else {
-                    System.out.println(response);
+                    if (opcode == Opcode.READ) {
+                    	Message message = (Message) inStream.readObject();
+                    	String author = message.getAuthor();
+                    	byte[] content = message.getContent();
+                    	//TODO: content = cipherService.decrypt(content);
+                    	System.out.println("Enviado por: '" + author + "'" + System.lineSeparator() + content.toString());
+                    }
+                    else {
+                    	System.out.println(response);
+                    }
                 }
             }
             sc.close();
@@ -239,8 +250,7 @@ public class Tintolmarket {
         String receiverId = command[1];
         String message = command[2];
         byte[] encryptedMessage = message.getBytes();
-        // TODO: Eu preciso da public key a partir da keystore, mas depois como faço encrypt?
-        encryptedMessage = cipherService.encrypt(encryptedMessage, null);
+        encryptedMessage = cipherService.encrypt(encryptedMessage, receiverId);
         outStream.writeObject(receiverId);
         outStream.writeObject(encryptedMessage);
     }

@@ -70,7 +70,7 @@ public class UserCatalog {
 
     }
 
-    public void talk(String senderId, String recipientId, String message) throws NoSuchElementException {
+    public void talk(String senderId, String recipientId, byte[] message) throws NoSuchElementException {
         User recipient = Optional.ofNullable(users.get(recipientId)).orElseThrow();
         recipient.addMessage(senderId, message);
         dps.putObject(recipient, Path.of(userDataDir, recipientId));

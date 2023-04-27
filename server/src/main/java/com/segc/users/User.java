@@ -92,7 +92,7 @@ public class User implements Serializable {
      * @param senderId The id of the sender ({@link User}) of the message.
      * @param message  The content of the message to add to this client's messages.
      */
-    public void addMessage(String senderId, String message) {
+    public void addMessage(String senderId, byte[] message) {
         messages.add(new Message(senderId, message));
     }
 
