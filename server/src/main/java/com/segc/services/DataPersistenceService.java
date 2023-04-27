@@ -30,11 +30,13 @@ public final class DataPersistenceService<T extends Serializable> {
 
     @SuppressWarnings("unchecked")
     public T getObject(String fileName) {
-        try (FileInputStream fin = new FileInputStream(fileName);
-             ObjectInputStream in = new ObjectInputStream(fin)) {
-            return (T) in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
+        synchronized(fileName) {
+            try (FileInputStream fin = new FileInputStream(fileName);
+                 ObjectInputStream in = new ObjectInputStream(fin)) {
+                return (T) in.readObject();
+            } catch (IOException | ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -43,11 +45,13 @@ public final class DataPersistenceService<T extends Serializable> {
     }
 
     public void putObject(T obj, String fileName) {
-        try (FileOutputStream fout = new FileOutputStream(fileName);
-             ObjectOutputStream out = new ObjectOutputStream(fout)) {
-            out.writeObject(obj);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        synchronized(fileName) {
+            try (FileOutputStream fout = new FileOutputStream(fileName);
+                 ObjectOutputStream out = new ObjectOutputStream(fout)) {
+                out.writeObject(obj);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -59,11 +63,13 @@ public final class DataPersistenceService<T extends Serializable> {
     public void putObjectAndDigest(T obj, String fileName) {
         byte[] digest = getDigest(obj);
         String digestFileName = "." + fileName + "." + digestAlgorithm.toLowerCase();
-        try (FileOutputStream fout = new FileOutputStream(digestFileName)) {
-            putObject(obj, fileName);
-            fout.write(digest);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        synchronized(digestFileName) {
+            try (FileOutputStream fout = new FileOutputStream(digestFileName)) {
+                putObject(obj, fileName);
+                fout.write(digest);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -111,21 +117,25 @@ public final class DataPersistenceService<T extends Serializable> {
 
     public byte[] getDigest(Path filePath) {
         Path digestFilePath = getDigestFilePath(filePath);
-        try (FileInputStream fin = new FileInputStream(digestFilePath.toString())) {
-            return fin.readAllBytes();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        synchronized(digestFilePath) {
+            try (FileInputStream fin = new FileInputStream(digestFilePath.toString())) {
+                return fin.readAllBytes();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
     public byte[] getDigest(T obj) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ObjectOutputStream out = new ObjectOutputStream(baos)) {
-            out.writeObject(obj);
-            byte[] bytes = baos.toByteArray();
-            return MessageDigest.getInstance(digestAlgorithm).digest(bytes);
-        } catch (IOException | NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+        synchronized(obj) {
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                 ObjectOutputStream out = new ObjectOutputStream(baos)) {
+                out.writeObject(obj);
+                byte[] bytes = baos.toByteArray();
+                return MessageDigest.getInstance(digestAlgorithm).digest(bytes);
+            } catch (IOException | NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

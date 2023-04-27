@@ -136,6 +136,11 @@ public class TintolmarketServer {
         wineCatalog.classify(wineName, stars);
     }
 
+    public String list() {
+        
+        return "";
+    }
+
     private void interactionLoop(ObjectOutputStream outStream, ObjectInputStream inStream, String clientId)
             throws ClassNotFoundException, IOException {
         boolean isExiting = false;
@@ -245,8 +250,9 @@ public class TintolmarketServer {
                     break;
                 }
                 case LIST: {
+                    String s = list();
                     outStream.writeObject(Opcode.OK);
-                    outStream.writeObject(""); //TODO
+                    outStream.writeObject(s);
                 }
                 case EXIT: {
                     isExiting = true;
