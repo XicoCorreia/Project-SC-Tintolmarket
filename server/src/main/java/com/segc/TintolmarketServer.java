@@ -149,7 +149,7 @@ public class TintolmarketServer {
         wineCatalog.classify(wineName, stars);
     }
 
-    public LinkedList<Transaction> list() {
+    public LinkedList<SignedTransaction> list() {
         return blockchainService.getTransactions();
     }
 
@@ -216,12 +216,10 @@ public class TintolmarketServer {
                     try {
                         price = wineCatalog.getPrice(wineName, sellerId); // cost per unit
                     } catch (NoSuchElementException e) {
-                        outStream.writeObject(Opcode.ERROR); // twice due to how the client handles messaging
                         outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
                         break;
                     } catch (IllegalArgumentException e) {
-                        outStream.writeObject(Opcode.ERROR); // twice due to how the client handles messaging
                         outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject(e.getMessage());
                         break;
@@ -303,9 +301,10 @@ public class TintolmarketServer {
                     break;
                 }
                 case LIST: {
-                    LinkedList<Transaction> transactions = blockchainService.getTransactions();
+                    LinkedList<SignedTransaction> transactions = blockchainService.getTransactions();
                     outStream.writeObject(Opcode.OK);
                     outStream.writeObject(transactions);
+                    break;
                 }
                 case EXIT: {
                     isExiting = true;

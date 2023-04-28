@@ -8,7 +8,6 @@ import java.io.*;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.spec.AlgorithmParameterSpec;
-import java.util.Base64;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 

@@ -2,7 +2,6 @@ package com.segc.services;
 
 import com.segc.exception.DataIntegrityException;
 import com.segc.transaction.SignedTransaction;
-import com.segc.transaction.Transaction;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -66,23 +65,27 @@ public class BlockchainService {
             throw new RuntimeException(e);
         }
         byte[] previousDigest;
-        long blockId;
+        long expectedBlockId;
         if (signedBlocks.isEmpty()) {
             previousDigest = new byte[32];
-            blockId = 1;
+            expectedBlockId = 1;
         } else {
             SignedObject lastSignedBlock = signedBlocks.get(signedBlocks.size() - 1);
             Block lastBlock = (Block) lastSignedBlock.getObject();
             previousDigest = dps.getDigest(signedBlocks.get(signedBlocks.size() - 1));
-            blockId = lastBlock.blockId + 1;
+            expectedBlockId = lastBlock.blockId + 1;
         }
 
-        String suffix = SUFFIX_FORMATTER.format(blockId); // bloco parcial tem o id n+1
+        String suffix = SUFFIX_FORMATTER.format(expectedBlockId); // bloco parcial tem o id n+1
         Path filePath = Path.of(blockchainDir, PREFIX + suffix + PART_EXTENSION);
         try {
             this.block = dps.getObjects(Block.class, blockchainDir, f -> f.getName().endsWith(PART_EXTENSION)).get(0);
+            if (this.block.blockId != expectedBlockId) {
+                String message = String.format("Expected block id %d, got %d.", expectedBlockId, this.block.blockId);
+                throw new DataIntegrityException(message);
+            }
         } catch (IndexOutOfBoundsException | FileNotFoundException e) {
-            this.block = new Block(previousDigest, blockId, new LinkedList<>());
+            this.block = new Block(previousDigest, expectedBlockId, new LinkedList<>());
         }
         verifyBlockchain();
         dps.putObject(this.block, filePath);
@@ -163,8 +166,8 @@ public class BlockchainService {
         dps.putObject(block, filePath);
     }
 
-    public LinkedList<Transaction> getTransactions() {
-        LinkedList<Transaction> transactions = new LinkedList<>();
+    public LinkedList<SignedTransaction> getTransactions() {
+        LinkedList<SignedTransaction> transactions = new LinkedList<>();
         for (SignedObject signedBlock : signedBlocks) {
             try {
                 Block block = (Block) signedBlock.getObject();
@@ -207,7 +210,7 @@ public class BlockchainService {
         private final byte[] previousDigest;
         private final long blockId;
         private long numTransactions;
-        private final List<Transaction> transactions;
+        private final List<SignedTransaction> transactions;
 
         @Override
         public String toString() {
@@ -217,14 +220,14 @@ public class BlockchainService {
                     digestToHex(previousDigest));
         }
 
-        public Block(byte[] previousDigest, long blockId, List<Transaction> transactions) {
+        public Block(byte[] previousDigest, long blockId, List<SignedTransaction> transactions) {
             this.previousDigest = previousDigest;
             this.blockId = blockId;
             this.transactions = transactions;
             this.numTransactions = transactions.size();
         }
 
-        private void addTransaction(Transaction t) {
+        private void addTransaction(SignedTransaction t) {
             this.transactions.add(t);
             numTransactions++;
         }

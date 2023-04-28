@@ -15,7 +15,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Scanner;
 import java.security.SignedObject;
@@ -136,30 +136,30 @@ public class Tintolmarket {
                     continue;
                 }
 
-                Opcode validComand = Opcode.OK;
+                Opcode status = Opcode.OK;
                 switch (opcode) {
                     case ADD: {
-                    	validComand = add(outStream, c, sc);
+                        status = add(outStream, c, sc);
                         break;
                     }
                     case SELL: {
-                    	validComand = sell(outStream, c, cipherService);
+                        status = sell(outStream, c, cipherService);
                         break;
                     }
                     case VIEW: {
-                    	validComand = view(outStream, c);
+                        status = view(outStream, c);
                         break;
                     }
                     case BUY: {
-                    	validComand = buy(outStream, inStream, c, cipherService);
+                        status = buy(outStream, inStream, c, cipherService);
                         break;
                     }
                     case CLASSIFY: {
-                    	validComand = classify(outStream, c);
+                        status = classify(outStream, c);
                         break;
                     }
                     case TALK: {
-                    	validComand = talk(outStream, c, cipherService);
+                        status = talk(outStream, c, cipherService);
                         break;
                     }
                     case EXIT: {
@@ -168,11 +168,7 @@ public class Tintolmarket {
                         break;
                     }
                     case WALLET:
-                        outStream.writeObject(opcode);
-                        break;
                     case READ:
-                        outStream.writeObject(opcode);
-                        break;
                     case LIST: {
                         outStream.writeObject(opcode);
                         break;
@@ -184,11 +180,13 @@ public class Tintolmarket {
                 if (isExiting) {
                     break;
                 }
-                if(validComand == Opcode.ERROR) {
-                	continue;
+                if (status == Opcode.INVALID) {
+                    continue;
                 }
 
-                Opcode status = (Opcode) inStream.readObject();
+                if (status == Opcode.OK) {
+                    status = (Opcode) inStream.readObject(); // if there was no error in the middle of an exchange
+                }
                 String response;
                 if (opcode == Opcode.READ && status == Opcode.OK) {
                     Message message = (Message) inStream.readObject();
@@ -197,12 +195,11 @@ public class Tintolmarket {
                     content = cipherService.decrypt(content);
                     response = String.format("Enviado por: '%s'%n%s", author, new String(content));
                 } else if (opcode == Opcode.LIST && status == Opcode.OK) {
-                    @SuppressWarnings("rawtypes") List list = (List) inStream.readObject();
-                    StringBuilder sb = new StringBuilder(list.size() * 128);
-                    for (Object o : list) {
-                        SignedTransaction st = (SignedTransaction) o;
-                        sb.append(st);
-                    }
+                    @SuppressWarnings("unchecked")
+                    LinkedList<SignedTransaction> transactions = (LinkedList<SignedTransaction>) inStream.readObject();
+                    StringBuilder sb = new StringBuilder(transactions.size() * 128);
+                    sb.append("Number of transactions: ").append(transactions.size()).append(System.lineSeparator());
+                    transactions.forEach(sb::append);
                     response = sb.toString();
                 } else {
                     response = (String) inStream.readObject();
@@ -220,7 +217,7 @@ public class Tintolmarket {
     private static Opcode add(ObjectOutputStream outStream, String[] command, Scanner sc) throws IOException {
         if (command.length != 3) {
             System.out.println("Error in the command");
-            return Opcode.ERROR;
+            return Opcode.INVALID;
         }
         outStream.writeObject(Opcode.ADD);
         outStream.writeObject(command[1]);
@@ -246,7 +243,7 @@ public class Tintolmarket {
             throws IOException {
         if (command.length != 4) {
             System.out.println("Error in the command");
-            return Opcode.ERROR;
+            return Opcode.INVALID;
         }
         outStream.writeObject(Opcode.SELL);
         String wine = command[1];
@@ -261,7 +258,7 @@ public class Tintolmarket {
     private static Opcode view(ObjectOutputStream outStream, String[] command) throws IOException {
         if (command.length != 2) {
             System.out.println("Error in the command");
-            return Opcode.ERROR;
+            return Opcode.INVALID;
         }
         outStream.writeObject(Opcode.VIEW);
         outStream.writeObject(command[1]);
@@ -270,12 +267,12 @@ public class Tintolmarket {
 
 
     private static Opcode buy(ObjectOutputStream outStream,
-                            ObjectInputStream inStream,
-                            String[] command,
-                            CipherService cipherService) throws IOException {
+                              ObjectInputStream inStream,
+                              String[] command,
+                              CipherService cipherService) throws IOException {
         if (command.length != 4) {
             System.out.println("Error in the command");
-            return Opcode.ERROR;
+            return Opcode.INVALID;
         }
         outStream.writeObject(Opcode.BUY);
         String wine = command[1];
@@ -302,7 +299,7 @@ public class Tintolmarket {
     private static Opcode classify(ObjectOutputStream outStream, String[] command) throws IOException {
         if (command.length != 3) {
             System.out.println("Error in the command");
-            return Opcode.ERROR;
+            return Opcode.INVALID;
         }
         outStream.writeObject(Opcode.CLASSIFY);
         int stars;
@@ -318,23 +315,23 @@ public class Tintolmarket {
 
     private static Opcode talk(ObjectOutputStream outStream, String[] command, CipherService cipherService)
             throws IOException {
-    	
+
         if (command.length < 3) {
             System.out.println("Error in the command");
-            return Opcode.ERROR;
+            return Opcode.INVALID;
         }
         outStream.writeObject(Opcode.TALK);
-    	StringBuilder builder = new StringBuilder();
-    	builder.append(command[2]);
-    	for(int i = 3; i < command.length;i++) {
-    		builder.append(" " + command[i]);
-    	}
-    	
+        StringBuilder builder = new StringBuilder();
+        builder.append(command[2]);
+        for (int i = 3; i < command.length; i++) {
+            builder.append(" ").append(command[i]);
+        }
+
         String receiverId = command[1];
         String message = builder.toString();
         byte[] encryptedMessage = message.getBytes();
         encryptedMessage = cipherService.encrypt(encryptedMessage, receiverId);
-        
+
         outStream.writeObject(receiverId);
         outStream.writeObject(encryptedMessage);
         return Opcode.OK;
