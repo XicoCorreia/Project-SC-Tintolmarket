@@ -77,6 +77,10 @@ public class WineCatalog {
 
     }
 
+    public double getPrice(String wineName, String sellerId) {
+        return getPrice(wineName, sellerId, 1);
+    }
+
     public void classify(String wineName, int stars) throws NoSuchElementException, IllegalArgumentException {
         Wine wine = wines.get(wineName);
         Optional.ofNullable(wine).orElseThrow().addRating(stars);

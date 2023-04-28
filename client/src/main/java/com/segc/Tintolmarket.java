@@ -62,8 +62,8 @@ public class Tintolmarket {
             "- talk <user> <message>%n" +
             "- list%n" +
             "- read%n" +
-            "- quit%n" );
-    
+            "- quit%n");
+
     private static String user;
 
     public static void main(String[] args) {
@@ -119,7 +119,6 @@ public class Tintolmarket {
                 System.exit(1);
             }
 
-
             System.out.printf("Authenticated.%n%s%n", COMMANDS);
             boolean isExiting = false;
 
@@ -170,22 +169,21 @@ public class Tintolmarket {
                         throw new RuntimeException();
                     }
                 }
+
                 Opcode status = (Opcode) inStream.readObject();
-                
-                
                 String response = (String) inStream.readObject();
                 if (status == Opcode.ERROR) {
                     System.err.println(response);
                 } else {
                     if (opcode == Opcode.READ) {
-                    	Message message = (Message) inStream.readObject();
-                    	String author = message.getAuthor();
-                    	byte[] content = message.getContent();
-                    	content = cipherService.decrypt(content);
-                    	System.out.println("Enviado por: '" + author + "'" + System.lineSeparator() + content.toString());
-                    }
-                    else {
-                    	System.out.println(response);
+                        Message message = (Message) inStream.readObject();
+                        String author = message.getAuthor();
+                        byte[] content = message.getContent();
+                        content = cipherService.decrypt(content);
+                        System.out.println(
+                                "Enviado por: '" + author + "'" + System.lineSeparator() + new String(content));
+                    } else {
+                        System.out.println(response);
                     }
                 }
             }
@@ -209,19 +207,18 @@ public class Tintolmarket {
         }
         ImageIcon image = new ImageIcon(command[2]);
         outStream.writeObject(image);
-
     }
 
-    private static void sell(ObjectOutputStream outStream, String[] command, CipherService cipherService) throws IOException {
+    private static void sell(ObjectOutputStream outStream, String[] command, CipherService cipherService)
+            throws IOException {
         if (command.length != 4) {
             System.out.println("Error in the command");
         }
         String wine = command[1];
         double value = Double.parseDouble(command[2]);
         int quantity = Integer.parseInt(command[3]);
-        WineTransaction t = new WineTransaction(wine, user, quantity, value, Type.SELL);
-        //Verificar se é so usar sign(t) ou se preciso da privatekey
-        SignedObject signedTransaction = cipherService.sign(t);
+        WineTransaction wt = new WineTransaction(wine, user, quantity, value, Type.SELL);
+        SignedObject signedTransaction = cipherService.sign(wt);
         outStream.writeObject(signedTransaction);
     }
 
@@ -233,22 +230,28 @@ public class Tintolmarket {
     }
 
 
-    private static void buy(ObjectOutputStream outStream, ObjectInputStream inStream, String[] command, CipherService cipherService) throws IOException {
+    private static void buy(ObjectOutputStream outStream,
+                            ObjectInputStream inStream,
+                            String[] command,
+                            CipherService cipherService) throws IOException {
         if (command.length != 4) {
             System.out.println("Error in the command");
         }
         String wine = command[1];
-        String sellerID = command[2];
+        String sellerId = command[2];
         int quantity = Integer.parseInt(command[3]);
-        
         outStream.writeObject(wine);
-        outStream.writeObject(sellerID);
-        double value = inStream.readDouble();
-        
-        WineTransaction t = new WineTransaction(wine, user, quantity, value, Type.BUY);
-        SignedObject signedTransaction = cipherService.sign(t);
-        outStream.writeObject(signedTransaction);
+        outStream.writeObject(sellerId);
+        outStream.writeObject(quantity);
 
+        try {
+            WineTransaction wt = (WineTransaction) inStream.readObject();
+            assert user.equals(wt.getAuthorId()) && wine.equals(wt.getItemId()) && quantity == wt.getUnitCount();
+            SignedObject signedTransaction = cipherService.sign(wt);
+            outStream.writeObject(signedTransaction);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static void classify(ObjectOutputStream outStream, String[] command) throws IOException {

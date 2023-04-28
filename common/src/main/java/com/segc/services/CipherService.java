@@ -111,7 +111,7 @@ public class CipherService {
      * Verifies the given {@link SignedObject} using the {@link PublicKey} from the default {@link Certificate}.
      *
      * @param obj the object to verify.
-     * @return the decrypted data.
+     * @return {@code true} true if the signature is valid, {@code false} otherwise.
      */
     public boolean verify(SignedObject obj) throws SignatureException, InvalidKeyException {
         return verify(obj, defaultCertificate);
@@ -121,7 +121,7 @@ public class CipherService {
      * Verifies the given {@link SignedObject} using the {@link PublicKey} from the given {@link Certificate}.
      *
      * @param obj the object to verify.
-     * @return the decrypted data.
+     * @return {@code true} true if the signature is valid, {@code false} otherwise.
      */
     public boolean verify(SignedObject obj, Certificate certificate) throws SignatureException, InvalidKeyException {
         return obj.verify(certificate.getPublicKey(), signature);
@@ -177,11 +177,11 @@ public class CipherService {
             throw new RuntimeException(e);
         }
     }
-    
+
     public byte[] decrypt(byte[] data) {
         return decrypt(data, defaultAlias);
     }
-    
+
     public byte[] decrypt(byte[] data, String alias) {
         PublicKey key = getCertificate(alias).getPublicKey();
         return decrypt(data, key);

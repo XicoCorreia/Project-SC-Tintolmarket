@@ -1,6 +1,7 @@
 package com.segc;
 
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author fc54685 Francisco Correia
@@ -25,15 +26,15 @@ public class Message implements Serializable {
     }
 
     public String getAuthor() {
-		return author;
-	}
+        return author;
+    }
 
-	public byte[] getContent() {
-		return content;
-	}
+    public byte[] getContent() {
+        return content;
+    }
 
-	@Override
+    @Override
     public String toString() {
-        return "Enviado por: '" + author + "'" + System.lineSeparator() + content;
+        return "Enviado por: '" + author + "'" + System.lineSeparator() + new String(content, StandardCharsets.UTF_8);
     }
 }

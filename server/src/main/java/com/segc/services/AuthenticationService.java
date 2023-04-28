@@ -95,7 +95,7 @@ public class AuthenticationService {
             File decrypted = new File(config.getValue("userDecryptedCredential"));
             AlgorithmParameters ap = AlgorithmParameters.getInstance(userCredentialsAlgorithm);
             cipherService.decrypt(new FileInputStream(userCredentials),
-                    new FileOutputStream(decrypted), getKeyFromPassword(userCredentialsAlgorithm),ap);
+                    new FileOutputStream(decrypted), getKeyFromPassword(userCredentialsAlgorithm), ap);
             return decrypted;
         } catch (NoSuchAlgorithmException | FileNotFoundException e) {
             throw new RuntimeException(e);
@@ -126,7 +126,7 @@ public class AuthenticationService {
         try {
             getUserCredentials(clientId);
         } catch (NoSuchElementException e) {
-        	return false;
+            return false;
         }
         return true;
     }

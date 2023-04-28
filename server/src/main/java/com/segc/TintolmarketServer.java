@@ -119,7 +119,7 @@ public class TintolmarketServer {
     }
 
     public void buy(String buyerId, String wineName, String sellerId, int quantity)
-            throws DuplicateElementException, NoSuchElementException, IllegalArgumentException {
+            throws NoSuchElementException, IllegalArgumentException {
         double balance = userCatalog.getBalance(buyerId);
         if (balance < wineCatalog.getPrice(wineName, sellerId, quantity)) {
             String msg = String.format("Buyer '%s' has insufficient funds to make this purchase.", buyerId);
@@ -175,25 +175,25 @@ public class TintolmarketServer {
                 case SELL: {
                     SignedObject sellTransaction = (SignedObject) inStream.readObject();
                     Certificate cert = authService.getCertificate(clientId);
-                    
-                    if(!cipherService.verify(sellTransaction,cert)) {
+
+                    if (!cipherService.verify(sellTransaction, cert)) {
                         outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Server couldn't verify the signature.");
                         break;
                     }
-                    
-                	WineTransaction t = (WineTransaction) sellTransaction.getObject();
+
+                    WineTransaction wt = (WineTransaction) sellTransaction.getObject();
                     try {
-                        sell(t.getItemId(), t.getAuthorId(), t.getUnitPrice(), t.getUnitCount());
-                    	blockchainService.addTransaction(t);
+                        sell(wt.getItemId(), wt.getAuthorId(), wt.getUnitPrice(), wt.getUnitCount());
+                        blockchainService.addTransaction(wt);
                         outStream.writeObject(Opcode.OK);
-                        outStream.writeObject("Wine '" + t.getItemId() + "' successfully added to the market.");
+                        outStream.writeObject("Wine '" + wt.getItemId() + "' successfully added to the market.");
                     } catch (NoSuchElementException e) {
                         outStream.writeObject(Opcode.ERROR);
-                        outStream.writeObject("Wine '" + t.getItemId() + "' does not exist.");
+                        outStream.writeObject("Wine '" + wt.getItemId() + "' does not exist.");
                     } catch (DuplicateElementException e) {
                         outStream.writeObject(Opcode.ERROR);
-                        outStream.writeObject("You are already selling wine '" + t.getItemId() + "'.");
+                        outStream.writeObject("You are already selling wine '" + wt.getItemId() + "'.");
                     }
                     break;
                 }
@@ -210,28 +210,32 @@ public class TintolmarketServer {
                     break;
                 }
                 case BUY: {
-                	String wineName = (String) inStream.readObject();
+                    String wineName = (String) inStream.readObject();
                     String sellerId = (String) inStream.readObject();
-                	outStream.writeObject(wineCatalog.getPrice(wineName, sellerId, 1));
-                	
-                    SignedObject sellTransaction = (SignedObject) inStream.readObject();
+                    int quantity = (Integer) inStream.readObject();
+                    double price = wineCatalog.getPrice(wineName, sellerId); // cost per unit
+
+                    WineTransaction wt = new WineTransaction(wineName, sellerId, quantity, price, Transaction.Type.BUY);
+                    outStream.writeObject(wt);
+
+                    SignedObject buyTransaction = (SignedObject) inStream.readObject();
                     Certificate cert = authService.getCertificate(clientId);
-                    
-                    if(!cipherService.verify(sellTransaction,cert)) {
+
+                    if (!cipherService.verify(buyTransaction, cert)) {
                         outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Server couldn't verify the signature.");
                         break;
                     }
-                    
-                	WineTransaction t = (WineTransaction) sellTransaction.getObject();
+
+                    wt = (WineTransaction) buyTransaction.getObject();
                     try {
-                        buy(t.getAuthorId(), t.getItemId(), sellerId, t.getUnitCount());
-                    	blockchainService.addTransaction(t);
+                        buy(wt.getAuthorId(), wt.getItemId(), sellerId, wt.getUnitCount());
+                        blockchainService.addTransaction(wt);
                         outStream.writeObject(Opcode.OK);
-                        outStream.writeObject("Wine '" + t.getItemId() + "' bought successfully.");
+                        outStream.writeObject("Wine '" + wt.getItemId() + "' bought successfully.");
                     } catch (NoSuchElementException e) {
                         outStream.writeObject(Opcode.ERROR);
-                        outStream.writeObject("Wine '" + t.getItemId() + "' does not exist.");
+                        outStream.writeObject("Wine '" + wt.getItemId() + "' does not exist.");
                     } catch (IllegalArgumentException e) {
                         outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject(e.getMessage()); // exception message contains more details
