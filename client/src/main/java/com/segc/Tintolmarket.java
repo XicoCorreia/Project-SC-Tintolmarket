@@ -135,39 +135,46 @@ public class Tintolmarket {
                     System.out.println("Unexpected command: " + c[0]);
                     continue;
                 }
-                outStream.writeObject(opcode);
+
+                Opcode validComand = Opcode.OK;
                 switch (opcode) {
                     case ADD: {
-                        add(outStream, c, sc);
+                    	validComand = add(outStream, c, sc);
                         break;
                     }
                     case SELL: {
-                        sell(outStream, c, cipherService);
+                    	validComand = sell(outStream, c, cipherService);
                         break;
                     }
                     case VIEW: {
-                        view(outStream, c);
+                    	validComand = view(outStream, c);
                         break;
                     }
                     case BUY: {
-                        buy(outStream, inStream, c, cipherService);
+                    	validComand = buy(outStream, inStream, c, cipherService);
                         break;
                     }
                     case CLASSIFY: {
-                        classify(outStream, c);
+                    	validComand = classify(outStream, c);
                         break;
                     }
                     case TALK: {
-                        talk(outStream, c, cipherService);
+                    	validComand = talk(outStream, c, cipherService);
                         break;
                     }
                     case EXIT: {
+                        outStream.writeObject(opcode);
                         isExiting = true;
                         break;
                     }
                     case WALLET:
+                        outStream.writeObject(opcode);
+                        break;
                     case READ:
+                        outStream.writeObject(opcode);
+                        break;
                     case LIST: {
+                        outStream.writeObject(opcode);
                         break;
                     }
                     default: {
@@ -176,6 +183,9 @@ public class Tintolmarket {
                 }
                 if (isExiting) {
                     break;
+                }
+                if(validComand == Opcode.ERROR) {
+                	continue;
                 }
 
                 Opcode status = (Opcode) inStream.readObject();
@@ -207,11 +217,12 @@ public class Tintolmarket {
         }
     }
 
-    private static void add(ObjectOutputStream outStream, String[] command, Scanner sc) throws IOException {
+    private static Opcode add(ObjectOutputStream outStream, String[] command, Scanner sc) throws IOException {
         if (command.length != 3) {
             System.out.println("Error in the command");
-            return;
+            return Opcode.ERROR;
         }
+        outStream.writeObject(Opcode.ADD);
         outStream.writeObject(command[1]);
         Path path = Paths.get(command[2]);
         ImageIcon image;
@@ -228,39 +239,45 @@ public class Tintolmarket {
             image = new ImageIcon();
         }
         outStream.writeObject(image);
+        return Opcode.OK;
     }
 
-    private static void sell(ObjectOutputStream outStream, String[] command, CipherService cipherService)
+    private static Opcode sell(ObjectOutputStream outStream, String[] command, CipherService cipherService)
             throws IOException {
         if (command.length != 4) {
             System.out.println("Error in the command");
-            return;
+            return Opcode.ERROR;
         }
+        outStream.writeObject(Opcode.SELL);
         String wine = command[1];
         double value = Double.parseDouble(command[2]);
         int quantity = Integer.parseInt(command[3]);
         WineTransaction wt = new WineTransaction(wine, user, quantity, value, Type.SELL);
         SignedTransaction signedTransaction = new SignedTransaction(cipherService.sign(wt));
         outStream.writeObject(signedTransaction);
+        return Opcode.OK;
     }
 
-    private static void view(ObjectOutputStream outStream, String[] command) throws IOException {
+    private static Opcode view(ObjectOutputStream outStream, String[] command) throws IOException {
         if (command.length != 2) {
             System.out.println("Error in the command");
-            return;
+            return Opcode.ERROR;
         }
+        outStream.writeObject(Opcode.VIEW);
         outStream.writeObject(command[1]);
+        return Opcode.OK;
     }
 
 
-    private static void buy(ObjectOutputStream outStream,
+    private static Opcode buy(ObjectOutputStream outStream,
                             ObjectInputStream inStream,
                             String[] command,
                             CipherService cipherService) throws IOException {
         if (command.length != 4) {
             System.out.println("Error in the command");
-            return;
+            return Opcode.ERROR;
         }
+        outStream.writeObject(Opcode.BUY);
         String wine = command[1];
         String sellerId = command[2];
         int quantity = Integer.parseInt(command[3]);
@@ -270,22 +287,24 @@ public class Tintolmarket {
         try {
             Opcode requestStatus = (Opcode) inStream.readObject();
             if (requestStatus.equals(Opcode.ERROR)) {
-                return;
+                return Opcode.ERROR;
             }
             WineTransaction wt = (WineTransaction) inStream.readObject();
             assert user.equals(wt.getAuthorId()) && wine.equals(wt.getItemId()) && quantity == wt.getUnitCount();
             SignedTransaction signedTransaction = new SignedTransaction(cipherService.sign(wt));
             outStream.writeObject(signedTransaction);
+            return Opcode.OK;
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void classify(ObjectOutputStream outStream, String[] command) throws IOException {
+    private static Opcode classify(ObjectOutputStream outStream, String[] command) throws IOException {
         if (command.length != 3) {
             System.out.println("Error in the command");
-            return;
+            return Opcode.ERROR;
         }
+        outStream.writeObject(Opcode.CLASSIFY);
         int stars;
         try {
             stars = Integer.parseInt(command[2]);
@@ -294,10 +313,17 @@ public class Tintolmarket {
         }
         outStream.writeObject(command[1]);
         outStream.writeObject(stars);
+        return Opcode.OK;
     }
 
-    private static void talk(ObjectOutputStream outStream, String[] command, CipherService cipherService)
+    private static Opcode talk(ObjectOutputStream outStream, String[] command, CipherService cipherService)
             throws IOException {
+    	
+        if (command.length < 3) {
+            System.out.println("Error in the command");
+            return Opcode.ERROR;
+        }
+        outStream.writeObject(Opcode.TALK);
     	StringBuilder builder = new StringBuilder();
     	builder.append(command[2]);
     	for(int i = 3; i < command.length;i++) {
@@ -311,5 +337,6 @@ public class Tintolmarket {
         
         outStream.writeObject(receiverId);
         outStream.writeObject(encryptedMessage);
+        return Opcode.OK;
     }
 }
