@@ -50,7 +50,7 @@ public class WineListing implements Serializable {
             String msg = String.format("Requested qty. (%d) exceeds available qty. (%d).", quantity, this.quantity);
             throw new IllegalArgumentException(msg);
         }
-        this.quantity += quantity;
+        this.quantity -= quantity;
     }
 
     /**
