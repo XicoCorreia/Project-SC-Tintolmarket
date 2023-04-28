@@ -10,7 +10,7 @@ import java.io.Serializable;
 public interface Transaction extends Serializable {
     String getItemId();
 
-    long getUnitCount();
+    int getUnitCount();
 
     double getUnitPrice();
 

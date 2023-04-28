@@ -9,6 +9,7 @@ import com.segc.services.BlockchainService;
 import com.segc.services.CipherService;
 import com.segc.services.DataPersistenceService;
 import com.segc.transaction.Transaction;
+import com.segc.transaction.WineTransaction;
 import com.segc.users.UserCatalog;
 import com.segc.wines.WineCatalog;
 
@@ -153,7 +154,7 @@ public class TintolmarketServer {
     }
 
     private void interactionLoop(ObjectOutputStream outStream, ObjectInputStream inStream, String clientId)
-            throws ClassNotFoundException, IOException {
+            throws ClassNotFoundException, IOException, InvalidKeyException, SignatureException {
         boolean isExiting = false;
         while (!isExiting) {
             Opcode command = (Opcode) inStream.readObject();
@@ -172,19 +173,27 @@ public class TintolmarketServer {
                     break;
                 }
                 case SELL: {
-                    String wineName = (String) inStream.readObject();
-                    double value = (Double) inStream.readObject();
-                    int quantity = (Integer) inStream.readObject();
+                    SignedObject sellTransaction = (SignedObject) inStream.readObject();
+                    Certificate cert = authService.getCertificate(clientId);
+                    
+                    if(!cipherService.verify(sellTransaction,cert)) {
+                        outStream.writeObject(Opcode.ERROR);
+                        outStream.writeObject("Server couldn't verify the signature.");
+                        break;
+                    }
+                    
+                	WineTransaction t = (WineTransaction) sellTransaction.getObject();
                     try {
-                        sell(wineName, clientId, value, quantity);
+                        sell(t.getItemId(), clientId, t.getUnitPrice(), t.getUnitCount());
+                    	blockchainService.addTransaction(t);
                         outStream.writeObject(Opcode.OK);
-                        outStream.writeObject("Wine '" + wineName + "' successfully added to the market.");
+                        outStream.writeObject("Wine '" + t.getItemId() + "' successfully added to the market.");
                     } catch (NoSuchElementException e) {
                         outStream.writeObject(Opcode.ERROR);
-                        outStream.writeObject("Wine '" + wineName + "' does not exist.");
+                        outStream.writeObject("Wine '" + t.getItemId() + "' does not exist.");
                     } catch (DuplicateElementException e) {
                         outStream.writeObject(Opcode.ERROR);
-                        outStream.writeObject("You are already selling wine '" + wineName + "'.");
+                        outStream.writeObject("You are already selling wine '" + t.getItemId() + "'.");
                     }
                     break;
                 }

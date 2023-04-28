@@ -9,7 +9,7 @@ public class WineTransaction implements Transaction {
     private static final long serialVersionUID = -6711990500501916335L;
     private final String wineName;
     private final String authorId;
-    private final long quantity;
+    private final int quantity;
     private final double costPerUnit;
     private final Type type;
 
@@ -27,7 +27,7 @@ public class WineTransaction implements Transaction {
     }
 
     @Override
-    public long getUnitCount() {
+    public int getUnitCount() {
         return quantity;
     }
 

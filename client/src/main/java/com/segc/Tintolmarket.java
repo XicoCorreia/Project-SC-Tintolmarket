@@ -4,6 +4,8 @@
 package com.segc;
 
 import com.segc.services.CipherService;
+import com.segc.transaction.WineTransaction;
+import com.segc.transaction.Transaction.Type;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -61,6 +63,8 @@ public class Tintolmarket {
             "- list%n" +
             "- read%n" +
             "- quit%n" );
+    
+    private static String user;
 
     public static void main(String[] args) {
         if (args.length < 4) {
@@ -74,7 +78,7 @@ public class Tintolmarket {
         String trustStore = args[1];
         String keyStore = args[2];
         String keyStorePassword = args[3];
-        String user = args[4];
+        user = args[4];
         String host = serverAddress;
         int port = DEFAULT_PORT;
 
@@ -134,7 +138,7 @@ public class Tintolmarket {
                         break;
                     }
                     case SELL: {
-                        sell(outStream, c);
+                        sell(outStream, c, cipherService);
                         break;
                     }
                     case VIEW: {
@@ -208,13 +212,17 @@ public class Tintolmarket {
 
     }
 
-    private static void sell(ObjectOutputStream outStream, String[] command) throws IOException {
+    private static void sell(ObjectOutputStream outStream, String[] command, CipherService cipherService) throws IOException {
         if (command.length != 4) {
             System.out.println("Error in the command");
         }
-        outStream.writeObject(command[1]);
-        outStream.writeObject(command[2]);
-        outStream.writeObject(command[3]);
+        String wine = command[1];
+        double value = Double.parseDouble(command[2]);
+        int quantity = Integer.parseInt(command[3]);
+        WineTransaction t = new WineTransaction(wine, user, quantity, value, Type.SELL);
+        //TODO: Verificar se é so usar sign(t) ou se preciso da privatekey
+        SignedObject signedTransaction = cipherService.sign(t);
+        outStream.writeObject(signedTransaction);
     }
 
     private static void view(ObjectOutputStream outStream, String[] command) throws IOException {
