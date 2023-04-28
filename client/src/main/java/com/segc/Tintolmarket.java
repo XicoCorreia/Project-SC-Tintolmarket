@@ -177,7 +177,7 @@ public class Tintolmarket {
                     	Message message = (Message) inStream.readObject();
                     	String author = message.getAuthor();
                     	byte[] content = message.getContent();
-                    	//TODO: content = cipherService.decrypt(content);
+                    	content = cipherService.decrypt(content);
                     	System.out.println("Enviado por: '" + author + "'" + System.lineSeparator() + content.toString());
                     }
                     else {

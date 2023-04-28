@@ -177,6 +177,15 @@ public class CipherService {
             throw new RuntimeException(e);
         }
     }
+    
+    public byte[] decrypt(byte[] data) {
+        return decrypt(data, defaultAlias);
+    }
+    
+    public byte[] decrypt(byte[] data, String alias) {
+        PublicKey key = getCertificate(alias).getPublicKey();
+        return decrypt(data, key);
+    }
 
     private byte[] decrypt(byte[] data, Key key) {
         try {

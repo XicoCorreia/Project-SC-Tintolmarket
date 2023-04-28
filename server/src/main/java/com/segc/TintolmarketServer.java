@@ -304,12 +304,12 @@ public class TintolmarketServer {
                 Certificate cert = isRegistered ? authService.getCertificate(clientId) // utilizador existente
                                                 : (Certificate) inStream.readObject(); // novo utilizador
 
-                if (cipherService.verify(receivedNonce, cert)) {
-                    isAuthenticated = true;
-                }
-
                 if (!isRegistered) {
                     authService.registerUser(clientId, cert);
+                }
+                
+                if (cipherService.verify(receivedNonce, cert)) {
+                    isAuthenticated = true;
                 }
 
                 outStream.writeObject(isAuthenticated);
