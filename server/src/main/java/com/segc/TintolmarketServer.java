@@ -31,7 +31,6 @@ import java.util.NoSuchElementException;
  */
 public class TintolmarketServer {
     private static final Configuration config = Configuration.getInstance();
-    private static final SecureRandom rd = new SecureRandom();
     private static final int DEFAULT_PORT = 12345;
     private final int port;
     private final UserCatalog userCatalog;
@@ -73,7 +72,6 @@ public class TintolmarketServer {
         String keyStore = args[2];
         String keyStorePassword = args[3];
 
-        File userCredentials = new File(config.getValue("userCredentials"));
         String signatureAlgorithm = config.getValue("signatureAlgorithm");
         String blockchainDir = config.getValue("blockchainDir");
 
@@ -82,7 +80,7 @@ public class TintolmarketServer {
         System.setProperty("javax.net.ssl.keyStoreType", config.getValue("keyStoreType"));
 
         CipherService cipherService = new CipherService(config.getValue("keyStoreAlias"), signatureAlgorithm);
-        AuthenticationService authService = new AuthenticationService(userCredentials, password, cipherService);
+        AuthenticationService authService = new AuthenticationService(password, cipherService);
 
         DataPersistenceService dps = new DataPersistenceService();
         BlockchainService blockchainService = new BlockchainService(blockchainDir, cipherService, dps);
@@ -315,7 +313,7 @@ public class TintolmarketServer {
                 ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
                 ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
                 String clientId;
-                Long nonce = rd.nextLong();
+                Long nonce = CipherService.genNonce();
 
                 clientId = (String) inStream.readObject();
 
@@ -328,7 +326,6 @@ public class TintolmarketServer {
                 SignedObject receivedNonce = (SignedObject) inStream.readObject();
                 Certificate cert = isRegistered ? authService.getCertificate(clientId) // utilizador existente
                                                 : (Certificate) inStream.readObject(); // novo utilizador
-
                 if (!isRegistered) {
                     authService.registerUser(clientId, cert);
                 }

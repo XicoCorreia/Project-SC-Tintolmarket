@@ -1,10 +1,14 @@
 package com.segc.services;
 
 import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEParameterSpec;
 import javax.security.auth.DestroyFailedException;
 import java.io.*;
 import java.security.*;
 import java.security.cert.Certificate;
+import java.security.spec.AlgorithmParameterSpec;
+import java.util.Base64;
 
 /**
  * A class that handles encryption and decryption.
@@ -14,7 +18,7 @@ import java.security.cert.Certificate;
  * @author fc56272 Filipe Egipto
  */
 public class CipherService {
-
+    private static final SecureRandom sr = new SecureRandom();
     private final KeyStore ks;
     private final String defaultAlias;
     private final PrivateKey defaultPrivateKey;
@@ -198,10 +202,10 @@ public class CipherService {
         }
     }
 
-    public void decrypt(FileInputStream fis, FileOutputStream fos, Key key, AlgorithmParameters params) {
+    public void decrypt(FileInputStream fis, FileOutputStream fos, Key key, AlgorithmParameterSpec spec) {
         try {
             Cipher cipher = Cipher.getInstance(key.getAlgorithm());
-            cipher.init(Cipher.DECRYPT_MODE, key, params);
+            cipher.init(Cipher.DECRYPT_MODE, key, spec);
             cipher(fis, fos, cipher);
         } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException |
                  InvalidAlgorithmParameterException | IOException e) {
@@ -209,10 +213,10 @@ public class CipherService {
         }
     }
 
-    public void encrypt(FileInputStream fis, FileOutputStream fos, Key key, AlgorithmParameters params) {
+    public void encrypt(FileInputStream fis, FileOutputStream fos, Key key, AlgorithmParameterSpec spec) {
         try {
             Cipher cipher = Cipher.getInstance(key.getAlgorithm());
-            cipher.init(Cipher.ENCRYPT_MODE, key, params);
+            cipher.init(Cipher.ENCRYPT_MODE, key, spec);
             cipher(fis, fos, cipher);
         } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException |
                  InvalidAlgorithmParameterException | IOException e) {
@@ -243,5 +247,18 @@ public class CipherService {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static PBEParameterSpec genPBEParameterSpec(int iterationCount) {
+        byte[] iv = new byte[16];
+        byte[] salt = new byte[16];
+        sr.nextBytes(iv);
+        sr.nextBytes(salt);
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
+        return new PBEParameterSpec(salt, iterationCount, ivParameterSpec);
+    }
+
+    public static Long genNonce() {
+        return sr.nextLong();
     }
 }
