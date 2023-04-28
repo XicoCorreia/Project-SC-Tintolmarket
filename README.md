@@ -24,3 +24,11 @@
 1. Na raíz do diretório do projeto, correr `./gradlew jar` para compilar os ficheiros `.jar`:
     1. Cliente: disponível em `...tintolmarket/client/build/Tintolmarket.jar`.
     2. Servidor: disponível em `...tintolmarket/server/build/TintolmarketServer.jar`.
+
+### Criação de truststores e keystores
+
+Ao correr o script `gen_keys.sh` é criada a informação de 6 utilizadores. São criadas:
+
+- uma truststore comum para todos os clientes
+- uma keystore para o servidor
+- uma keystore para cada cliente
