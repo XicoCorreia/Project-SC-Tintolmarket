@@ -146,7 +146,7 @@ public class Tintolmarket {
                         break;
                     }
                     case BUY: {
-                        buy(outStream, c);
+                        buy(outStream, inStream, c, cipherService);
                         break;
                     }
                     case CLASSIFY: {
@@ -220,7 +220,7 @@ public class Tintolmarket {
         double value = Double.parseDouble(command[2]);
         int quantity = Integer.parseInt(command[3]);
         WineTransaction t = new WineTransaction(wine, user, quantity, value, Type.SELL);
-        //TODO: Verificar se é so usar sign(t) ou se preciso da privatekey
+        //Verificar se é so usar sign(t) ou se preciso da privatekey
         SignedObject signedTransaction = cipherService.sign(t);
         outStream.writeObject(signedTransaction);
     }
@@ -233,13 +233,22 @@ public class Tintolmarket {
     }
 
 
-    private static void buy(ObjectOutputStream outStream, String[] command) throws IOException {
+    private static void buy(ObjectOutputStream outStream, ObjectInputStream inStream, String[] command, CipherService cipherService) throws IOException {
         if (command.length != 4) {
             System.out.println("Error in the command");
         }
-        outStream.writeObject(command[1]);
-        outStream.writeObject(command[2]);
-        outStream.writeObject(command[3]);
+        String wine = command[1];
+        String sellerID = command[2];
+        int quantity = Integer.parseInt(command[3]);
+        
+        outStream.writeObject(wine);
+        outStream.writeObject(sellerID);
+        double value = inStream.readDouble();
+        
+        WineTransaction t = new WineTransaction(wine, user, quantity, value, Type.SELL);
+        SignedObject signedTransaction = cipherService.sign(t);
+        outStream.writeObject(signedTransaction);
+
     }
 
     private static void classify(ObjectOutputStream outStream, String[] command) throws IOException {

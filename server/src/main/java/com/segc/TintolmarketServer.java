@@ -184,7 +184,7 @@ public class TintolmarketServer {
                     
                 	WineTransaction t = (WineTransaction) sellTransaction.getObject();
                     try {
-                        sell(t.getItemId(), clientId, t.getUnitPrice(), t.getUnitCount());
+                        sell(t.getItemId(), t.getAuthorId(), t.getUnitPrice(), t.getUnitCount());
                     	blockchainService.addTransaction(t);
                         outStream.writeObject(Opcode.OK);
                         outStream.writeObject("Wine '" + t.getItemId() + "' successfully added to the market.");
@@ -210,16 +210,28 @@ public class TintolmarketServer {
                     break;
                 }
                 case BUY: {
-                    String wineName = (String) inStream.readObject();
+                	String wineName = (String) inStream.readObject();
                     String sellerId = (String) inStream.readObject();
-                    int quantity = (Integer) inStream.readObject();
+                	outStream.writeObject(wineCatalog.getPrice(wineName, sellerId, 1));
+                	
+                    SignedObject sellTransaction = (SignedObject) inStream.readObject();
+                    Certificate cert = authService.getCertificate(clientId);
+                    
+                    if(!cipherService.verify(sellTransaction,cert)) {
+                        outStream.writeObject(Opcode.ERROR);
+                        outStream.writeObject("Server couldn't verify the signature.");
+                        break;
+                    }
+                    
+                	WineTransaction t = (WineTransaction) sellTransaction.getObject();
                     try {
-                        buy(clientId, wineName, sellerId, quantity);
+                        buy(t.getAuthorId(), t.getItemId(), sellerId, t.getUnitCount());
+                    	blockchainService.addTransaction(t);
                         outStream.writeObject(Opcode.OK);
-                        outStream.writeObject("Wine '" + wineName + "' bought successfully.");
+                        outStream.writeObject("Wine '" + t.getItemId() + "' bought successfully.");
                     } catch (NoSuchElementException e) {
                         outStream.writeObject(Opcode.ERROR);
-                        outStream.writeObject("Wine '" + wineName + "' does not exist.");
+                        outStream.writeObject("Wine '" + t.getItemId() + "' does not exist.");
                     } catch (IllegalArgumentException e) {
                         outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject(e.getMessage()); // exception message contains more details
