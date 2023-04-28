@@ -23,6 +23,7 @@ import java.util.NoSuchElementException;
  * @author fc56272 Filipe Egipto
  */
 public class AuthenticationService {
+    private static final Configuration config = Configuration.getInstance();
     private final CipherService cipherService;
     private final File userCredentials;
     private final char[] password;
@@ -32,24 +33,15 @@ public class AuthenticationService {
         this(userCredentials,
                 password,
                 cipherService,
-                Configuration.getInstance().getValue("userCredentialsPBEAlgorithm"));
+                config.getValue("userCredentialsPBEAlgorithm"));
     }
 
     public AuthenticationService(File userCredentials, char[] password, CipherService cipherService,
                                  String userCredentialsPBEAlgorithm) {
-        this(userCredentials,
-                password,
-                cipherService,
-                userCredentialsPBEAlgorithm,
-                new File(Configuration.getInstance().getValue("userDecryptedCredential")));
-    }
-
-    public AuthenticationService(File userCredentials, char[] password, CipherService cipherService,
-                                 String userCredentialsAlgorithm, File decryptedUserCredentials) {
         this.cipherService = cipherService;
         this.password = password;
-        this.userCredentialsAlgorithm = userCredentialsAlgorithm;
-        this.userCredentials = decryptedUserCredentials;
+        this.userCredentials = userCredentials;
+        this.userCredentialsAlgorithm = userCredentialsPBEAlgorithm;
         try {
             if (userCredentials.getParentFile().mkdirs() || userCredentials.createNewFile()) {
                 System.out.println(getClass().getSimpleName() + ": created empty user credentials file.");
@@ -57,7 +49,6 @@ public class AuthenticationService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        decrypted(userCredentials);
     }
 
     public boolean authenticateUser(String clientId, String password) throws NoSuchElementException {
@@ -65,10 +56,10 @@ public class AuthenticationService {
     }
 
     private String getUserCredentials(String clientId) throws NoSuchElementException {
-        // TODO: decrypt entire file and then read lines
         String pattern = clientId + ":";
         synchronized (userCredentials) {
-            try (BufferedReader usersReader = new BufferedReader(new FileReader(userCredentials))) {
+            File decryptedUserCredentials = decrypt();
+            try (BufferedReader usersReader = new BufferedReader(new FileReader(decryptedUserCredentials))) {
                 return usersReader.lines()
                                   .dropWhile(line -> !line.startsWith(pattern))
                                   .findFirst()
@@ -79,18 +70,6 @@ public class AuthenticationService {
         }
     }
 
-    //Decidir se decifra a cada uso do ficheiro ou só uma vez - no inicio
-    //Tornar void e transformar file em atributo
-    private void decrypted(File userCredentialsEncrypted) {
-        try {
-            AlgorithmParameters ap = AlgorithmParameters.getInstance(userCredentialsAlgorithm);
-            cipherService.decrypt(new FileInputStream(userCredentialsEncrypted),
-                    new FileOutputStream(userCredentials), getKeyFromPassword(userCredentialsAlgorithm),ap);
-        } catch (NoSuchAlgorithmException | FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public void registerUser(String clientId, Certificate cert) throws DuplicateElementException {
         // TODO: store cert instead of writing password
         try {
@@ -98,22 +77,35 @@ public class AuthenticationService {
             throw new DuplicateElementException();
         } catch (NoSuchElementException e) {
             synchronized (userCredentials) {
-                try (FileWriter fw = new FileWriter(userCredentials, true);
+                File decryptedUserCredentials = decrypt();
+                try (FileWriter fw = new FileWriter(decryptedUserCredentials, true);
                      BufferedWriter bw = new BufferedWriter(fw)) {
                     bw.write(clientId + ":" + cert + "\n");
                 } catch (IOException ioException) {
                     throw new RuntimeException(ioException);
                 }
+                encrypt(decryptedUserCredentials);
             }
         }
     }
 
-    //TODO: when to encrypt the file?? Should we decrypt and encrypt at every usage??
-    private void encrypted(File encryptedUserCredentials) {
+    private File decrypt() {
+        try {
+            File decrypted = new File(config.getValue("userDecryptedCredential"));
+            AlgorithmParameters ap = AlgorithmParameters.getInstance(userCredentialsAlgorithm);
+            cipherService.decrypt(new FileInputStream(userCredentials),
+                    new FileOutputStream(decrypted), getKeyFromPassword(userCredentialsAlgorithm),ap);
+            return decrypted;
+        } catch (NoSuchAlgorithmException | FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void encrypt(File decryptedUserCredentials) {
         try {
             AlgorithmParameters ap = AlgorithmParameters.getInstance(userCredentialsAlgorithm);
-            cipherService.encrypt(new FileInputStream(userCredentials),
-                    new FileOutputStream(encryptedUserCredentials), getKeyFromPassword(userCredentialsAlgorithm), ap);
+            cipherService.encrypt(new FileInputStream(decryptedUserCredentials),
+                    new FileOutputStream(userCredentials), getKeyFromPassword(userCredentialsAlgorithm), ap);
         } catch (NoSuchAlgorithmException | IOException e) {
             throw new RuntimeException(e);
         }
