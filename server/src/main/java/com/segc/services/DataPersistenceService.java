@@ -115,6 +115,9 @@ public final class DataPersistenceService {
         }
         for (File file : Objects.requireNonNull(dir.listFiles())) {
             Path filePath = file.toPath();
+            if (isDigestFilePath(filePath)) {
+                continue;
+            }
             T obj = getObject(clazz, filePath);
             if (!isMatchingDigests(obj, filePath)) {
                 String fileName = filePath.getFileName().toString();
@@ -129,7 +132,7 @@ public final class DataPersistenceService {
     private Path getDigestFilePath(Path filePath) {
         String fileName = filePath.getFileName().toString();
         String directoryName = filePath.getParent().toString();
-        return Paths.get(directoryName, "." + fileName.toLowerCase() + ".digest");
+        return Paths.get(directoryName, fileName.toLowerCase() + "." + digestAlgorithm);
     }
 
     public byte[] getDigest(Path filePath) {
@@ -156,9 +159,13 @@ public final class DataPersistenceService {
         }
     }
 
-    public <T extends Serializable> boolean isMatchingDigests(T obj, Path filePath) {
+    private boolean isDigestFilePath(Path filePath) {
+        return filePath.getFileName().toString().endsWith("." + digestAlgorithm);
+    }
+
+    private <T extends Serializable> boolean isMatchingDigests(T obj, Path filePath) {
         byte[] actualDigest = getDigest(obj);
-        byte[] expectedDigest = getDigest(getDigestFilePath(filePath));
+        byte[] expectedDigest = getDigest(filePath);
         return MessageDigest.isEqual(actualDigest, expectedDigest);
     }
 }

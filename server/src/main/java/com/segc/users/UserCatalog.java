@@ -39,7 +39,7 @@ public class UserCatalog {
         }
         User user = new User(clientId);
         users.put(clientId, user);
-        dps.putObject(user, Path.of(userDataDir, clientId));
+        dps.putObjectAndDigest(user, Path.of(userDataDir, clientId));
     }
 
     public double getBalance(String clientId) throws NoSuchElementException {
@@ -49,14 +49,14 @@ public class UserCatalog {
     public void addBalance(String clientId, double balance) throws NoSuchElementException, IllegalArgumentException {
         User user = Optional.ofNullable(users.get(clientId)).orElseThrow();
         user.addBalance(balance);
-        dps.putObject(user, Path.of(userDataDir, user.getId()));
+        dps.putObjectAndDigest(user, Path.of(userDataDir, user.getId()));
     }
 
     public void removeBalance(String clientId, double balance)
             throws NoSuchElementException, IllegalArgumentException {
         User user = Optional.ofNullable(users.get(clientId)).orElseThrow();
         user.removeBalance(balance);
-        dps.putObject(user, Path.of(userDataDir, clientId));
+        dps.putObjectAndDigest(user, Path.of(userDataDir, clientId));
     }
 
     public void transferBalance(String senderId, String recipientId, double amount)
@@ -74,14 +74,14 @@ public class UserCatalog {
     public void talk(String senderId, String recipientId, byte[] message) throws NoSuchElementException {
         User recipient = Optional.ofNullable(users.get(recipientId)).orElseThrow();
         recipient.addMessage(senderId, message);
-        dps.putObject(recipient, Path.of(userDataDir, recipientId));
+        dps.putObjectAndDigest(recipient, Path.of(userDataDir, recipientId));
     }
 
     public Message read(String clientId) throws NoSuchElementException, IllegalArgumentException {
         User recipient = Optional.ofNullable(users.get(clientId)).orElseThrow();
         try {
             Message message = recipient.readMessage();
-            dps.putObject(recipient, Path.of(userDataDir, clientId));
+            dps.putObjectAndDigest(recipient, Path.of(userDataDir, clientId));
             return message;
         } catch (NoSuchElementException e) {
             String msg = String.format("User '%s' has no unread messages.", clientId);
