@@ -316,7 +316,7 @@ public class TintolmarketServer {
                 if (!isRegistered) {
                     authService.registerUser(clientId, cert);
                 }
-                
+
                 if (cipherService.verify(receivedNonce, cert)) {
                     isAuthenticated = true;
                 }

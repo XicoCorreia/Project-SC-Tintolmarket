@@ -6,6 +6,7 @@ import com.segc.transaction.Transaction;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.SignatureException;
@@ -63,15 +64,15 @@ public class BlockchainService {
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
-        String previousDigest;
+        byte[] previousDigest;
         long blockId;
         if (signedBlocks.isEmpty()) {
-            previousDigest = String.format("%08d", 0);
+            previousDigest = new byte[32];
             blockId = 1;
         } else {
             SignedObject lastSignedBlock = signedBlocks.get(signedBlocks.size() - 1);
             Block lastBlock = (Block) lastSignedBlock.getObject();
-            previousDigest = dps.getDigestAsHexString(signedBlocks.get(signedBlocks.size() - 1));
+            previousDigest = dps.getDigest(signedBlocks.get(signedBlocks.size() - 1));
             blockId = lastBlock.blockId + 1;
         }
 
@@ -117,20 +118,20 @@ public class BlockchainService {
                 nextBlock = this.block; // verificamos se o bloco parcial aponta para o último bloco assinado
             }
 
-            String actualDigest = dps.getDigestAsHexString(prev);
+            byte[] actualDigest = dps.getDigest(prev);
             Block prevBlock = (Block) Objects.requireNonNull(prev).getObject();
             if (prevBlock.blockId != expectedBlockId) {
                 String message = String.format("Expected block id %d, got %d.", expectedBlockId, prevBlock.blockId);
                 throw new DataIntegrityException(message);
             }
 
-            String expectedDigest = nextBlock.previousDigest;
-            if (!Objects.equals(actualDigest, expectedDigest)) {
+            byte[] expectedDigest = nextBlock.previousDigest;
+            if (!Arrays.equals(actualDigest, expectedDigest)) {
                 String message = String.format("At block %d: expected digest %s for previous block %d, got %s.",
                         nextBlock.blockId,
-                        expectedDigest,
+                        digestToHex(expectedDigest),
                         prevBlock.blockId,
-                        actualDigest);
+                        digestToHex(actualDigest));
                 throw new DataIntegrityException(message);
             }
             prev = next;
@@ -153,7 +154,7 @@ public class BlockchainService {
                 throw new DataIntegrityException("Could not rename partial block file");
             }
             signedBlocks.add(signedBlock);
-            block = new Block(dps.getDigestAsHexString(signedBlock), block.blockId + 1, new LinkedList<>());
+            block = new Block(dps.getDigest(signedBlock), block.blockId + 1, new LinkedList<>());
             block.addTransaction(t);
         }
         String suffix = SUFFIX_FORMATTER.format(block.blockId);
@@ -188,9 +189,21 @@ public class BlockchainService {
         return sb.append(block).toString();
     }
 
+    /**
+     * Converts a digest in byte array format into a hex-formatted string.
+     *
+     * @param digest the digest to format
+     * @return a hex-formatted string
+     * @see <a href="https://stackoverflow.com/a/943963">Stack Overflow Answer</a>
+     */
+    public static String digestToHex(byte[] digest) {
+        BigInteger bi = new BigInteger(1, digest);
+        return String.format("%0" + (digest.length << 1) + "X", bi);
+    }
+
     private static class Block implements Serializable {
         private static final long serialVersionUID = 8425212697641963447L;
-        private final String previousDigest;
+        private final byte[] previousDigest;
         private final long blockId;
         private long numTransactions;
         private final List<Transaction> transactions;
@@ -200,10 +213,10 @@ public class BlockchainService {
             return String.format("Block %s has %d transactions and points to hashed block %s.%n",
                     blockId,
                     numTransactions,
-                    previousDigest);
+                    digestToHex(previousDigest));
         }
 
-        public Block(String previousDigest, long blockId, List<Transaction> transactions) {
+        public Block(byte[] previousDigest, long blockId, List<Transaction> transactions) {
             this.previousDigest = previousDigest;
             this.blockId = blockId;
             this.transactions = transactions;
