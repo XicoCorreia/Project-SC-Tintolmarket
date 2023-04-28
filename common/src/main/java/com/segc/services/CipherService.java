@@ -188,12 +188,7 @@ public class CipherService {
     }
 
     public byte[] decrypt(byte[] data) {
-        return decrypt(data, defaultAlias);
-    }
-
-    public byte[] decrypt(byte[] data, String alias) {
-        PublicKey key = getCertificate(alias).getPublicKey();
-        return decrypt(data, key);
+        return decrypt(data, defaultPrivateKey);
     }
 
     private byte[] decrypt(byte[] data, Key key) {

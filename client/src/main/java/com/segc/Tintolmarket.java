@@ -180,13 +180,13 @@ public class Tintolmarket {
 
                 Opcode status = (Opcode) inStream.readObject();
                 String response;
-                if (opcode == Opcode.READ) {
+                if (opcode == Opcode.READ && status == Opcode.OK) {
                     Message message = (Message) inStream.readObject();
                     String author = message.getAuthor();
                     byte[] content = message.getContent();
                     content = cipherService.decrypt(content);
                     response = String.format("Enviado por: '%s'%n%s", author, new String(content));
-                } else if (opcode == Opcode.LIST) {
+                } else if (opcode == Opcode.LIST && status == Opcode.OK) {
                     @SuppressWarnings("rawtypes") List list = (List) inStream.readObject();
                     StringBuilder sb = new StringBuilder(list.size() * 128);
                     for (Object o : list) {
@@ -210,6 +210,7 @@ public class Tintolmarket {
     private static void add(ObjectOutputStream outStream, String[] command, Scanner sc) throws IOException {
         if (command.length != 3) {
             System.out.println("Error in the command");
+            return;
         }
         outStream.writeObject(command[1]);
         Path path = Paths.get(command[2]);
@@ -233,6 +234,7 @@ public class Tintolmarket {
             throws IOException {
         if (command.length != 4) {
             System.out.println("Error in the command");
+            return;
         }
         String wine = command[1];
         double value = Double.parseDouble(command[2]);
@@ -245,6 +247,7 @@ public class Tintolmarket {
     private static void view(ObjectOutputStream outStream, String[] command) throws IOException {
         if (command.length != 2) {
             System.out.println("Error in the command");
+            return;
         }
         outStream.writeObject(command[1]);
     }
@@ -256,6 +259,7 @@ public class Tintolmarket {
                             CipherService cipherService) throws IOException {
         if (command.length != 4) {
             System.out.println("Error in the command");
+            return;
         }
         String wine = command[1];
         String sellerId = command[2];
@@ -280,6 +284,7 @@ public class Tintolmarket {
     private static void classify(ObjectOutputStream outStream, String[] command) throws IOException {
         if (command.length != 3) {
             System.out.println("Error in the command");
+            return;
         }
         int stars;
         try {
@@ -293,13 +298,17 @@ public class Tintolmarket {
 
     private static void talk(ObjectOutputStream outStream, String[] command, CipherService cipherService)
             throws IOException {
-        if (command.length != 3) {
-            System.out.println("Error in the command");
-        }
+    	StringBuilder builder = new StringBuilder();
+    	builder.append(command[2]);
+    	for(int i = 3; i < command.length;i++) {
+    		builder.append(" " + command[i]);
+    	}
+    	
         String receiverId = command[1];
-        String message = command[2];
+        String message = builder.toString();
         byte[] encryptedMessage = message.getBytes();
         encryptedMessage = cipherService.encrypt(encryptedMessage, receiverId);
+        
         outStream.writeObject(receiverId);
         outStream.writeObject(encryptedMessage);
     }
