@@ -245,7 +245,7 @@ public class Tintolmarket {
         outStream.writeObject(sellerID);
         double value = inStream.readDouble();
         
-        WineTransaction t = new WineTransaction(wine, user, quantity, value, Type.SELL);
+        WineTransaction t = new WineTransaction(wine, user, quantity, value, Type.BUY);
         SignedObject signedTransaction = cipherService.sign(t);
         outStream.writeObject(signedTransaction);
 
