@@ -274,7 +274,7 @@ public class Tintolmarket {
             }
             WineTransaction wt = (WineTransaction) inStream.readObject();
             assert user.equals(wt.getAuthorId()) && wine.equals(wt.getItemId()) && quantity == wt.getUnitCount();
-            SignedObject signedTransaction = cipherService.sign(wt);
+            SignedTransaction signedTransaction = new SignedTransaction(cipherService.sign(wt));
             outStream.writeObject(signedTransaction);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
