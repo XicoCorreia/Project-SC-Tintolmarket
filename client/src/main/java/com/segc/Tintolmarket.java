@@ -114,15 +114,17 @@ public class Tintolmarket {
             if (!isRegistered) {
                 outStream.writeObject(cipherService.getCertificate());
             }
-            if (!inStream.readBoolean()) {
+
+            boolean isAuthenticated = (Boolean) inStream.readObject();
+            if (!isAuthenticated) {
                 System.out.println("Authentication failed.");
                 System.exit(1);
             }
 
             System.out.printf("Authenticated.%n%s%n", COMMANDS);
-            boolean isExiting = false;
 
-            while (!isExiting && sc.hasNextLine()) {
+            boolean isExiting = false;
+            while (sc.hasNextLine()) {
                 String command = sc.nextLine();
                 String[] c = command.split(" ");
                 Opcode opcode = opcodes.getOrDefault(c[0].toLowerCase(), Opcode.INVALID);
@@ -169,7 +171,9 @@ public class Tintolmarket {
                         throw new RuntimeException();
                     }
                 }
-
+                if (isExiting) {
+                    break;
+                }
                 Opcode status = (Opcode) inStream.readObject();
                 String response = (String) inStream.readObject();
                 if (status == Opcode.ERROR) {

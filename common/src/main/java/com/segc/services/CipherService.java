@@ -9,6 +9,8 @@ import java.security.*;
 import java.security.cert.Certificate;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Base64;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 /**
  * A class that handles encryption and decryption.
@@ -40,7 +42,10 @@ public class CipherService {
         ks = initKeyStore(keyStore, keyStorePassword, keyStoreType);
         try {
             this.defaultAlias = defaultAlias;
-            this.defaultPrivateKey = getPrivateKey(defaultAlias, keyStorePassword);
+            PrivateKey pk = getPrivateKey(defaultAlias, keyStorePassword);
+            this.defaultPrivateKey = Optional.ofNullable(pk)
+                                             .orElseThrow(() -> new NoSuchElementException(
+                                                     "Alias " + defaultAlias + " does not exist."));
             this.defaultCertificate = getCertificate(defaultAlias);
             this.signature = Signature.getInstance(signatureEngine);
         } catch (UnrecoverableKeyException | NoSuchAlgorithmException e) {
