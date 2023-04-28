@@ -59,7 +59,8 @@ public class UserCatalog {
         dps.putObject(user, Path.of(userDataDir, clientId));
     }
 
-    public void transferBalance(String senderId, String recipientId, double amount) {
+    public void transferBalance(String senderId, String recipientId, double amount)
+            throws NoSuchElementException, IllegalArgumentException {
         // BOTH conditions must be true before we transfer the balance
         if (users.containsKey(senderId) && users.containsKey(recipientId)) {
             removeBalance(senderId, amount);

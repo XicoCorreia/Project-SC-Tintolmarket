@@ -214,12 +214,19 @@ public class Tintolmarket {
         }
         outStream.writeObject(command[1]);
         Path path = Paths.get(command[2]);
+        ImageIcon image;
 
-        while (!Files.exists(path)) {
+        while (!Files.exists(path) && !path.toString().equals("null")) {
             System.out.println("Enter the path to the wine image: ");
             path = Paths.get(sc.nextLine());
         }
-        ImageIcon image = new ImageIcon(command[2]);
+
+        if (Files.exists(path)) {
+            image = new ImageIcon(command[2]);
+        } else {
+            System.out.println("INFO: Wine does not have a label.");
+            image = new ImageIcon();
+        }
         outStream.writeObject(image);
     }
 
@@ -257,8 +264,11 @@ public class Tintolmarket {
         outStream.writeObject(wine);
         outStream.writeObject(sellerId);
         outStream.writeObject(quantity);
-
         try {
+            Opcode requestStatus = (Opcode) inStream.readObject();
+            if (requestStatus.equals(Opcode.ERROR)) {
+                return;
+            }
             WineTransaction wt = (WineTransaction) inStream.readObject();
             assert user.equals(wt.getAuthorId()) && wine.equals(wt.getItemId()) && quantity == wt.getUnitCount();
             SignedObject signedTransaction = cipherService.sign(wt);
@@ -272,8 +282,14 @@ public class Tintolmarket {
         if (command.length != 3) {
             System.out.println("Error in the command");
         }
+        int stars;
+        try {
+            stars = Integer.parseInt(command[2]);
+        } catch (NumberFormatException e) {
+            stars = -1;
+        }
         outStream.writeObject(command[1]);
-        outStream.writeObject(command[2]);
+        outStream.writeObject(stars);
     }
 
     private static void talk(ObjectOutputStream outStream, String[] command, CipherService cipherService)

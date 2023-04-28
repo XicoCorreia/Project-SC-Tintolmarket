@@ -88,6 +88,7 @@ public class TintolmarketServer {
         tms.startServer();
     }
 
+    @SuppressWarnings("InfiniteLoopStatement")
     public void startServer() {
 
         ServerSocketFactory ssf = SSLServerSocketFactory.getDefault();
@@ -211,8 +212,21 @@ public class TintolmarketServer {
                     String wineName = (String) inStream.readObject();
                     String sellerId = (String) inStream.readObject();
                     int quantity = (Integer) inStream.readObject();
-                    double price = wineCatalog.getPrice(wineName, sellerId); // cost per unit
-
+                    double price;
+                    try {
+                        price = wineCatalog.getPrice(wineName, sellerId); // cost per unit
+                    } catch (NoSuchElementException e) {
+                        outStream.writeObject(Opcode.ERROR); // twice due to how the client handles messaging
+                        outStream.writeObject(Opcode.ERROR);
+                        outStream.writeObject("Wine '" + wineName + "' does not exist.");
+                        break;
+                    } catch (IllegalArgumentException e) {
+                        outStream.writeObject(Opcode.ERROR); // twice due to how the client handles messaging
+                        outStream.writeObject(Opcode.ERROR);
+                        outStream.writeObject(e.getMessage());
+                        break;
+                    }
+                    outStream.writeObject(Opcode.OK);
                     WineTransaction wt = new WineTransaction(wineName, sellerId, quantity, price, Transaction.Type.BUY);
                     outStream.writeObject(wt);
 
@@ -232,8 +246,11 @@ public class TintolmarketServer {
                         outStream.writeObject(Opcode.OK);
                         outStream.writeObject("Wine '" + wt.getItemId() + "' bought successfully.");
                     } catch (NoSuchElementException e) {
+                        String message = wineCatalog.contains(wineName)
+                                         ? "Wine '" + wineName + "' is not listed by the that seller."
+                                         : "Wine '" + wineName + "' does not exist.";
                         outStream.writeObject(Opcode.ERROR);
-                        outStream.writeObject("Wine '" + wt.getItemId() + "' does not exist.");
+                        outStream.writeObject(message);
                     } catch (IllegalArgumentException e) {
                         outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject(e.getMessage()); // exception message contains more details
@@ -253,9 +270,12 @@ public class TintolmarketServer {
                         classify(wineName, stars);
                         outStream.writeObject(Opcode.OK);
                         outStream.writeObject("Classification added successfully.");
-                    } catch (Exception e) {
+                    } catch (NoSuchElementException e) {
                         outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Wine '" + wineName + "' does not exist.");
+                    } catch (Exception e) {
+                        outStream.writeObject(Opcode.ERROR);
+                        outStream.writeObject(e.getMessage());
                     }
                     break;
                 }

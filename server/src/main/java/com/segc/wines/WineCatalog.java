@@ -77,7 +77,7 @@ public class WineCatalog {
 
     }
 
-    public double getPrice(String wineName, String sellerId) {
+    public double getPrice(String wineName, String sellerId) throws NoSuchElementException {
         return getPrice(wineName, sellerId, 1);
     }
 
@@ -85,5 +85,9 @@ public class WineCatalog {
         Wine wine = wines.get(wineName);
         Optional.ofNullable(wine).orElseThrow().addRating(stars);
         dps.putObjectAndDigest(wine, Path.of(wineDataDir, wine.getName()));
+    }
+
+    public boolean contains(String wineName) {
+        return wines.containsKey(wineName);
     }
 }
