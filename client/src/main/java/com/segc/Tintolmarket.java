@@ -4,6 +4,7 @@
 package com.segc;
 
 import com.segc.services.CipherService;
+import com.segc.transaction.SignedTransaction;
 import com.segc.transaction.Transaction;
 import com.segc.transaction.WineTransaction;
 import com.segc.transaction.Transaction.Type;
@@ -15,7 +16,6 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -191,8 +191,8 @@ public class Tintolmarket {
                     @SuppressWarnings("rawtypes") List list = (List) inStream.readObject();
                     StringBuilder sb = new StringBuilder(list.size() * 128);
                     for (Object o : list) {
-                        WineTransaction wt = (WineTransaction) o;
-                        sb.append(wt);
+                        SignedTransaction st = (SignedTransaction) o;
+                        sb.append(st);
                     }
                     response = sb.toString();
                 } else {
@@ -239,7 +239,7 @@ public class Tintolmarket {
         double value = Double.parseDouble(command[2]);
         int quantity = Integer.parseInt(command[3]);
         WineTransaction wt = new WineTransaction(wine, user, quantity, value, Type.SELL);
-        SignedObject signedTransaction = cipherService.sign(wt);
+        SignedTransaction signedTransaction = new SignedTransaction(cipherService.sign(wt));
         outStream.writeObject(signedTransaction);
     }
 

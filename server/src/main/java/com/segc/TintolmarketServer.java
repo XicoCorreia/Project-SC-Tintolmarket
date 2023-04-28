@@ -8,6 +8,7 @@ import com.segc.services.AuthenticationService;
 import com.segc.services.BlockchainService;
 import com.segc.services.CipherService;
 import com.segc.services.DataPersistenceService;
+import com.segc.transaction.SignedTransaction;
 import com.segc.transaction.Transaction;
 import com.segc.transaction.WineTransaction;
 import com.segc.users.UserCatalog;
@@ -172,27 +173,26 @@ public class TintolmarketServer {
                     break;
                 }
                 case SELL: {
-                    SignedObject sellTransaction = (SignedObject) inStream.readObject();
+                    SignedTransaction st = (SignedTransaction) inStream.readObject();
                     Certificate cert = authService.getCertificate(clientId);
 
-                    if (!cipherService.verify(sellTransaction, cert)) {
+                    if (!cipherService.verify(st.getSignedObject(), cert)) {
                         outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Server couldn't verify the signature.");
                         break;
                     }
 
-                    WineTransaction wt = (WineTransaction) sellTransaction.getObject();
                     try {
-                        sell(wt.getItemId(), wt.getAuthorId(), wt.getUnitPrice(), wt.getUnitCount());
-                        blockchainService.addTransaction(wt);
+                        sell(st.getItemId(), st.getAuthorId(), st.getUnitPrice(), st.getUnitCount());
+                        blockchainService.addTransaction(st);
                         outStream.writeObject(Opcode.OK);
-                        outStream.writeObject("Wine '" + wt.getItemId() + "' successfully added to the market.");
+                        outStream.writeObject("Wine '" + st.getItemId() + "' successfully added to the market.");
                     } catch (NoSuchElementException e) {
                         outStream.writeObject(Opcode.ERROR);
-                        outStream.writeObject("Wine '" + wt.getItemId() + "' does not exist.");
+                        outStream.writeObject("Wine '" + st.getItemId() + "' does not exist.");
                     } catch (DuplicateElementException e) {
                         outStream.writeObject(Opcode.ERROR);
-                        outStream.writeObject("You are already selling wine '" + wt.getItemId() + "'.");
+                        outStream.writeObject("You are already selling wine '" + st.getItemId() + "'.");
                     }
                     break;
                 }
@@ -230,21 +230,20 @@ public class TintolmarketServer {
                     WineTransaction wt = new WineTransaction(wineName, sellerId, quantity, price, Transaction.Type.BUY);
                     outStream.writeObject(wt);
 
-                    SignedObject buyTransaction = (SignedObject) inStream.readObject();
+                    SignedTransaction st = (SignedTransaction) inStream.readObject();
                     Certificate cert = authService.getCertificate(clientId);
 
-                    if (!cipherService.verify(buyTransaction, cert)) {
+                    if (!cipherService.verify(st.getSignedObject(), cert)) {
                         outStream.writeObject(Opcode.ERROR);
                         outStream.writeObject("Server couldn't verify the signature.");
                         break;
                     }
 
-                    wt = (WineTransaction) buyTransaction.getObject();
                     try {
-                        buy(wt.getAuthorId(), wt.getItemId(), sellerId, wt.getUnitCount());
-                        blockchainService.addTransaction(wt);
+                        buy(st.getAuthorId(), st.getItemId(), sellerId, st.getUnitCount());
+                        blockchainService.addTransaction(st);
                         outStream.writeObject(Opcode.OK);
-                        outStream.writeObject("Wine '" + wt.getItemId() + "' bought successfully.");
+                        outStream.writeObject("Wine '" + st.getItemId() + "' bought successfully.");
                     } catch (NoSuchElementException e) {
                         String message = wineCatalog.contains(wineName)
                                          ? "Wine '" + wineName + "' is not listed by the that seller."

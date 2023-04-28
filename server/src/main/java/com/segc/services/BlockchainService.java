@@ -1,6 +1,7 @@
 package com.segc.services;
 
 import com.segc.exception.DataIntegrityException;
+import com.segc.transaction.SignedTransaction;
 import com.segc.transaction.Transaction;
 
 import java.io.FileNotFoundException;
@@ -139,7 +140,7 @@ public class BlockchainService {
         } while (next != null);
     }
 
-    public void addTransaction(Transaction t) {
+    public void addTransaction(SignedTransaction t) {
         if (block.transactions.size() < MAX_TRANSACTIONS_PER_BLOCK) {
             block.addTransaction(t);
         } else {
