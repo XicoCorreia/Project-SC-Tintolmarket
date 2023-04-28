@@ -5,7 +5,6 @@ package com.segc;
 
 import com.segc.services.CipherService;
 import com.segc.transaction.SignedTransaction;
-import com.segc.transaction.Transaction;
 import com.segc.transaction.WineTransaction;
 import com.segc.transaction.Transaction.Type;
 
