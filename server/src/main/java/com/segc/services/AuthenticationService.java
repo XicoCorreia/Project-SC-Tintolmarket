@@ -11,6 +11,7 @@ import java.io.*;
 import java.security.AlgorithmParameters;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.NoSuchElementException;
@@ -122,12 +123,32 @@ public class AuthenticationService {
     }
 
     public boolean isRegisteredUser(String clientId) {
-        // TODO: check if user already exists
-        return false;
+        try {
+            getUserCredentials(clientId);
+        } catch (NoSuchElementException e) {
+        	return false;
+        }
+        return true;
     }
 
     public Certificate getCertificate(String clientId) {
-        // TODO: get certificate
+        String cerPath = this.getUserCredentials(clientId);
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(cerPath);
+            CertificateFactory factory = CertificateFactory.getInstance("X.509");
+            return factory.generateCertificate(fis);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (fis != null) {
+                    fis.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         return null;
     }
 }
