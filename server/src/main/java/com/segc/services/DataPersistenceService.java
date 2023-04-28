@@ -4,7 +4,6 @@ import com.segc.Configuration;
 import com.segc.exception.DataIntegrityException;
 
 import java.io.*;
-import java.math.BigInteger;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -147,12 +146,6 @@ public final class DataPersistenceService {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    public <T extends Serializable> String getDigestAsHexString(T obj) {
-        byte[] digest = getDigest(obj);
-        BigInteger bi = new BigInteger(1, digest);
-        return String.format("%0" + (digest.length << 1) + "X", bi);
     }
 
     public <T extends Serializable> byte[] getDigest(T obj) {
