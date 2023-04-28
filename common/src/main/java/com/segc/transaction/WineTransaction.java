@@ -48,11 +48,14 @@ public class WineTransaction implements Transaction {
 
     @Override
     public String toString() {
+        String author = type == Type.BUY
+                        ? "Buyer"
+                        : (type == Type.SELL ? "Seller" : "Author");
         return String.format("Transaction:%n" +
                 "  Wine: %s%n" +
-                "  Author: %s%n" +
+                "  %s: %s%n" +
                 "  Quantity: %d%n" +
                 "  Cost per unit: %f%n" +
-                "  Type: %s%n", getItemId(), getAuthorId(), getUnitCount(), getUnitPrice(), getType());
+                "  Type: %s%n", getItemId(), author, getAuthorId(), getUnitCount(), getUnitPrice(), getType());
     }
 }

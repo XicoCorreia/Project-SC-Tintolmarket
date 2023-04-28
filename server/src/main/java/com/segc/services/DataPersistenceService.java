@@ -73,9 +73,9 @@ public final class DataPersistenceService {
 
     public <T extends Serializable> void putObjectAndDigest(T obj, String fileName) {
         byte[] digest = getDigest(obj);
-        String digestFileName = "." + fileName + "." + digestAlgorithm.toLowerCase();
+        File digestFile = getDigestFilePath(Path.of(fileName)).toFile();
         synchronized (this) {
-            try (FileOutputStream fout = new FileOutputStream(digestFileName)) {
+            try (FileOutputStream fout = new FileOutputStream(digestFile)) {
                 putObject(obj, fileName);
                 fout.write(digest);
             } catch (IOException e) {
@@ -86,11 +86,6 @@ public final class DataPersistenceService {
 
     public <T extends Serializable> void putObjectAndDigest(T obj, Path filePath) {
         putObjectAndDigest(obj, filePath.toString());
-    }
-
-    public <T extends Serializable> List<T> getObjects(Class<T> clazz, String directoryName)
-            throws FileNotFoundException {
-        return getObjects(clazz, directoryName, p -> true);
     }
 
     public <T extends Serializable> List<T> getObjects(Class<T> clazz,

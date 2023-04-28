@@ -4,15 +4,19 @@
 package com.segc;
 
 import com.segc.services.CipherService;
+import com.segc.transaction.Transaction;
 import com.segc.transaction.WineTransaction;
 import com.segc.transaction.Transaction.Type;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.security.SignedObject;
@@ -165,7 +169,7 @@ public class Tintolmarket {
                     case WALLET:
                     case READ:
                     case LIST: {
-                        break; //ERROR if length(c) > 1?
+                        break;
                     }
                     default: {
                         throw new RuntimeException();
@@ -174,22 +178,28 @@ public class Tintolmarket {
                 if (isExiting) {
                     break;
                 }
+
                 Opcode status = (Opcode) inStream.readObject();
-                String response = (String) inStream.readObject();
-                if (status == Opcode.ERROR) {
-                    System.err.println(response);
-                } else {
-                    if (opcode == Opcode.READ) {
-                        Message message = (Message) inStream.readObject();
-                        String author = message.getAuthor();
-                        byte[] content = message.getContent();
-                        content = cipherService.decrypt(content);
-                        System.out.println(
-                                "Enviado por: '" + author + "'" + System.lineSeparator() + new String(content));
-                    } else {
-                        System.out.println(response);
+                String response;
+                if (opcode == Opcode.READ) {
+                    Message message = (Message) inStream.readObject();
+                    String author = message.getAuthor();
+                    byte[] content = message.getContent();
+                    content = cipherService.decrypt(content);
+                    response = String.format("Enviado por: '%s'%n%s", author, new String(content));
+                } else if (opcode == Opcode.LIST) {
+                    @SuppressWarnings("rawtypes") List list = (List) inStream.readObject();
+                    StringBuilder sb = new StringBuilder(list.size() * 128);
+                    for (Object o : list) {
+                        WineTransaction wt = (WineTransaction) o;
+                        sb.append(wt);
                     }
+                    response = sb.toString();
+                } else {
+                    response = (String) inStream.readObject();
                 }
+                PrintStream out = status == Opcode.ERROR ? System.err : System.out;
+                out.println(response);
             }
             sc.close();
 

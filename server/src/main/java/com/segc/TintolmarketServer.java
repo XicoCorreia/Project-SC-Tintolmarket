@@ -284,7 +284,7 @@ public class TintolmarketServer {
                     break;
                 }
                 case LIST: {
-                    LinkedList<Transaction> transactions = new LinkedList<>();
+                    LinkedList<Transaction> transactions = blockchainService.getTransactions();
                     outStream.writeObject(Opcode.OK);
                     outStream.writeObject(transactions);
                 }
@@ -328,6 +328,7 @@ public class TintolmarketServer {
                                                 : (Certificate) inStream.readObject(); // novo utilizador
                 if (!isRegistered) {
                     authService.registerUser(clientId, cert);
+                    userCatalog.add(clientId);
                 }
 
                 if (cipherService.verify(receivedNonce, cert)) {
