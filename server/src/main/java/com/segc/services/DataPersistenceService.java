@@ -32,7 +32,7 @@ public final class DataPersistenceService {
 
     @SuppressWarnings({"unchecked", "unused"})
     public <T extends Serializable> T getObject(Class<T> clazz, String fileName) throws FileNotFoundException {
-        synchronized (fileName) {
+        synchronized (this) {
             try (FileInputStream fin = new FileInputStream(fileName);
                  ObjectInputStream in = new ObjectInputStream(fin)) {
                 return (T) in.readObject();
@@ -49,7 +49,7 @@ public final class DataPersistenceService {
     }
 
     public <T extends Serializable> void putObject(T obj, String fileName) {
-        synchronized (fileName) {
+        synchronized (this) {
             File dir = new File(fileName).getParentFile();
             if (dir.mkdirs()) {
                 System.out.println("Created directory: " + dir.getAbsolutePath());
@@ -75,7 +75,7 @@ public final class DataPersistenceService {
     public <T extends Serializable> void putObjectAndDigest(T obj, String fileName) {
         byte[] digest = getDigest(obj);
         String digestFileName = "." + fileName + "." + digestAlgorithm.toLowerCase();
-        synchronized (digestFileName) {
+        synchronized (this) {
             try (FileOutputStream fout = new FileOutputStream(digestFileName)) {
                 putObject(obj, fileName);
                 fout.write(digest);
@@ -140,7 +140,7 @@ public final class DataPersistenceService {
 
     public byte[] getDigest(Path filePath) {
         Path digestFilePath = getDigestFilePath(filePath);
-        synchronized (digestFilePath) {
+        synchronized (this) {
             try (FileInputStream fin = new FileInputStream(digestFilePath.toString())) {
                 return fin.readAllBytes();
             } catch (IOException e) {
@@ -156,7 +156,7 @@ public final class DataPersistenceService {
     }
 
     public <T extends Serializable> byte[] getDigest(T obj) {
-        synchronized (obj) {
+        synchronized (this) {
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                  ObjectOutputStream out = new ObjectOutputStream(baos)) {
                 out.writeObject(obj);
